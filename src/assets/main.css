@@ -41,6 +41,30 @@
     @apply mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-4 py-8 sm:px-10 sm:py-16;
   }
 
+  .site-header {
+    @apply sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur;
+  }
+
+  .site-nav {
+    @apply mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-10;
+  }
+
+  .site-brand {
+    @apply text-sm font-extrabold tracking-tight text-ink no-underline;
+  }
+
+  .solver-nav-links {
+    @apply flex items-center gap-1 rounded-lg bg-canvas p-1;
+  }
+
+  .solver-nav-link {
+    @apply rounded-md px-3 py-1.5 text-sm font-bold text-muted no-underline transition hover:text-ink;
+  }
+
+  .solver-nav-link.router-link-active {
+    @apply bg-surface text-accent shadow-sm;
+  }
+
   .hero {
     @apply mb-10 max-w-xl text-center;
   }
@@ -131,6 +155,50 @@
     @apply border-accent;
   }
 
+  .mine-board {
+    @apply grid aspect-square grid-cols-5 overflow-hidden rounded-xl border-2 border-ink bg-line;
+    grid-auto-rows: minmax(0, 1fr);
+    gap: 1px;
+  }
+
+  .mine-cell {
+    @apply relative flex aspect-square min-h-0 min-w-0 items-center justify-center text-lg font-extrabold sm:text-2xl;
+  }
+
+  .mine-cell--hidden {
+    @apply bg-slate-300;
+  }
+
+  .mine-cell--revealed {
+    @apply bg-surface text-ink;
+  }
+
+  .mine-cell--flagged {
+    @apply bg-rose-100 text-rose-600;
+  }
+
+  .mine-cell--recently-updated {
+    animation: mine-cell-update 260ms ease-out;
+  }
+
+  .mine-flag {
+    @apply leading-none;
+  }
+
+  .mine-clue--1 {
+    @apply text-sky-600;
+  }
+
+  .mine-clue--2 {
+    @apply text-success;
+  }
+
+  .mine-clue--3,
+  .mine-clue--4,
+  .mine-clue--5 {
+    @apply text-rose-600;
+  }
+
   .cell {
     @apply relative flex aspect-square min-h-0 min-w-0 items-stretch justify-center border-0 bg-surface p-0 text-center font-bold text-ink transition-colors;
   }
@@ -199,6 +267,18 @@
 
     100% {
       opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes mine-cell-update {
+    0% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0.28);
+      transform: scale(0.94);
+    }
+
+    100% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0);
       transform: scale(1);
     }
   }

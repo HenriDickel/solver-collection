@@ -32,7 +32,7 @@
       </div>
 
       <div class="solver-controls" :aria-busy="isAutoSolving">
-        <button class="clear-button" type="button" @click="sudokuStore.clearBoard()">Clear</button>
+        <button class="clear-button" type="button" @click="sudokuStore.clearBoard()">Reset</button>
         <button
           v-if="solverMode === 'editing'"
           class="solver-button"
@@ -65,31 +65,14 @@
       </div>
     </article>
 
-    <aside class="terminal" aria-labelledby="terminal-title">
-      <div class="terminal-header">
-        <h2 id="terminal-title">Terminal</h2>
-        <span class="terminal-indicator" :class="`terminal-indicator--${solverMode}`"></span>
-      </div>
-
-      <ol v-if="logs.length > 0" ref="terminalLog" class="terminal-log" aria-live="polite">
-        <li
-          v-for="log in logs"
-          :key="log.id"
-          class="terminal-log-entry"
-          :class="`terminal-log-entry--${log.level}`"
-        >
-          <span aria-hidden="true">›</span>
-          <span>{{ log.message }}</span>
-        </li>
-      </ol>
-      <p v-else class="terminal-empty">Ready. Start the solver to follow the analysis.</p>
-    </aside>
+    <SolverTerminal :logs="logs" :mode="solverMode" />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import SolverTerminal from './SolverTerminal.vue'
 import SudokuCell from './SudokuCell.vue'
 import { useSudokuStore } from '../stores/sudoku'
 
@@ -100,17 +83,4 @@ const continueLabel = computed(() =>
   nextStep.value === 'fillSingles' ? 'Place single values' : 'Check candidates',
 )
 
-const terminalLog = ref<HTMLOListElement | null>(null)
-
-watch(
-  logs,
-  async () => {
-    await nextTick()
-
-    if (terminalLog.value) {
-      terminalLog.value.scrollTop = terminalLog.value.scrollHeight
-    }
-  },
-  { deep: true, flush: 'post' },
-)
 </script>

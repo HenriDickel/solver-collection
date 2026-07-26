@@ -2,16 +2,16 @@
   <main class="page-shell">
     <section class="hero" aria-labelledby="page-title">
       <p class="eyebrow">Solver Collection</p>
-      <h1 id="page-title">Sudoku Solver</h1>
+      <h1 id="page-title">Minesweeper Solver</h1>
       <p class="intro">
-        Build, inspect, and solve Sudoku puzzles step by step with live candidate analysis.
+        Resolve simple Minesweeper boards with safe-cell and mine-flag deductions.
       </p>
     </section>
 
-    <SudokuBoard />
+    <MinesweeperBoard />
   </main>
 </template>
 
 <script setup lang="ts">
-import SudokuBoard from '../components/SudokuBoard.vue'
+import MinesweeperBoard from '../components/MinesweeperBoard.vue'
 </script>

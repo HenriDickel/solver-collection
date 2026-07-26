@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "pinia": "latest",
-    "vue": "latest"
+    "vue": "latest",
+    "vue-router": "latest"
   },
   "devDependencies": {
     "@tailwindcss/vite": "latest",
