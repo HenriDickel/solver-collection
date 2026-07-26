@@ -1,0 +1,261 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #172033;
+  --color-muted: #667085;
+  --color-canvas: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-line: #d9deea;
+  --color-accent: #5d5fef;
+  --color-accent-soft: #efefff;
+  --color-success: #18836a;
+  --radius-card: 1.5rem;
+  --shadow-card: 0 1.25rem 3.75rem rgb(24 32 60 / 0.1);
+  --font-sans: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply m-0 min-w-80 bg-canvas font-sans text-ink antialiased;
+    background-image: radial-gradient(circle at 50% 0%, #e7e8ff 0, transparent 34rem);
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    margin: 0;
+    appearance: none;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-4 py-8 sm:px-10 sm:py-16;
+  }
+
+  .hero {
+    @apply mb-10 max-w-xl text-center;
+  }
+
+  .eyebrow {
+    @apply mb-2 text-xs font-bold tracking-[0.16em] text-accent uppercase;
+  }
+
+  h1 {
+    @apply m-0 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl;
+  }
+
+  h2 {
+    @apply m-0 text-xl font-bold tracking-tight text-ink;
+  }
+
+  .intro {
+    @apply mb-0 mt-4 text-base leading-7 text-muted;
+  }
+
+  .solver-layout {
+    @apply grid w-full max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch;
+  }
+
+  .board-card {
+    @apply w-full rounded-card border bg-surface p-4 shadow-card sm:p-8;
+  }
+
+  .board-card--editing {
+    @apply border-line;
+  }
+
+  .board-card--solving {
+    @apply border-accent bg-accent-soft;
+  }
+
+  .board-header {
+    @apply mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-start sm:justify-between;
+  }
+
+  .progress-pill {
+    @apply shrink-0 rounded-full bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent;
+  }
+
+  .solver-button {
+    @apply min-w-32 cursor-pointer rounded-lg bg-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60;
+  }
+
+  .clear-button {
+    @apply min-w-32 cursor-pointer rounded-lg border border-line bg-surface px-5 py-3 text-sm font-bold text-muted transition hover:border-ink hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .auto-button {
+    @apply min-w-32 cursor-pointer rounded-lg border border-accent bg-accent-soft px-5 py-3 text-sm font-bold text-accent transition hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60;
+  }
+
+  .solver-controls {
+    @apply mt-6 flex flex-wrap items-center justify-center gap-3;
+  }
+
+  .solver-status {
+    @apply inline-flex min-w-32 items-center justify-center rounded-lg px-5 py-3 text-center text-sm font-bold;
+  }
+
+  .solver-status--solved {
+    @apply bg-emerald-50 text-success;
+  }
+
+  .solver-status--stuck {
+    @apply bg-amber-50 text-amber-700;
+  }
+
+  .mode-label {
+    @apply mb-0 mt-1 text-xs font-semibold;
+  }
+
+  .mode-label--editing {
+    @apply text-muted;
+  }
+
+  .board {
+    @apply grid aspect-square grid-cols-9 overflow-hidden rounded-xl border-2 border-ink bg-line;
+    grid-auto-rows: minmax(0, 1fr);
+    gap: 1px;
+  }
+
+  .board--solving {
+    @apply border-accent;
+  }
+
+  .cell {
+    @apply relative flex aspect-square min-h-0 min-w-0 items-stretch justify-center border-0 bg-surface p-0 text-center font-bold text-ink transition-colors;
+  }
+
+  .cell:hover {
+    @apply bg-accent-soft;
+  }
+
+  .cell:focus-within {
+    @apply relative z-10 bg-accent-soft ring-2 ring-inset ring-accent;
+  }
+
+  .cell-input {
+    @apply size-full min-w-0 border-0 bg-transparent p-0 text-center text-lg font-bold text-ink outline-none sm:text-xl;
+  }
+
+  .cell-value {
+    @apply flex size-full items-center justify-center text-lg sm:text-xl;
+  }
+
+  .cell--given {
+    @apply text-success;
+  }
+
+  .cell--recently-filled {
+    animation: cell-highlight 260ms ease-out;
+  }
+
+  .cell--recently-filled .cell-value {
+    animation: cell-value-enter 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .cell--box-top {
+    @apply border-t-2 border-ink;
+  }
+
+  .cell--box-left {
+    @apply border-l-2 border-ink;
+  }
+
+  .candidate-grid {
+    @apply grid size-full grid-cols-3 grid-rows-3 p-1.5 sm:p-2;
+  }
+
+  .candidate {
+    @apply flex items-center justify-center text-[0.5rem] font-bold leading-none text-accent sm:text-[0.625rem];
+  }
+
+  @keyframes cell-highlight {
+    0% {
+      background-color: #dedefe;
+      transform: scale(0.94);
+    }
+
+    100% {
+      background-color: #ffffff;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes cell-value-enter {
+    0% {
+      opacity: 0;
+      transform: scale(0.65);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .board-hint {
+    @apply mb-0 mt-5 text-sm leading-6 text-muted;
+  }
+
+  .board-hint code {
+    @apply rounded bg-accent-soft px-1.5 py-0.5 font-mono text-xs font-semibold text-accent;
+  }
+
+  .terminal {
+    @apply flex min-h-72 max-h-[40rem] flex-col overflow-hidden rounded-card border border-slate-700 bg-slate-950 p-5 font-mono text-sm text-slate-200 shadow-card lg:h-full lg:min-h-0;
+  }
+
+  .terminal-header {
+    @apply mb-4 flex items-start justify-between gap-3 border-b border-slate-700 pb-4;
+  }
+
+  .terminal h2 {
+    @apply text-base text-white;
+  }
+
+  .terminal-indicator {
+    @apply mt-1 size-2.5 rounded-full bg-slate-500;
+  }
+
+  .terminal-indicator--solving {
+    @apply bg-emerald-400 shadow-[0_0_0.75rem_rgb(74_222_128_/_0.8)];
+  }
+
+  .terminal-indicator--solved {
+    @apply bg-emerald-400;
+  }
+
+  .terminal-indicator--stuck {
+    @apply bg-amber-400;
+  }
+
+  .terminal-log {
+    @apply m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0 pr-2 text-xs leading-5;
+  }
+
+  .terminal-log-entry {
+    @apply grid grid-cols-[auto_1fr] gap-x-2 text-slate-300;
+  }
+
+  .terminal-log-entry--success {
+    @apply text-emerald-300;
+  }
+
+  .terminal-log-entry--warning {
+    @apply text-amber-300;
+  }
+
+  .terminal-empty {
+    @apply mb-0 text-xs leading-5 text-slate-400;
+  }
+}
