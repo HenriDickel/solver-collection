@@ -7,11 +7,21 @@ import type {
   MinesweeperSolverMode,
 } from '../types/minesweeper'
 
-const boardSize = 5
+const boardSize = 15
 const autoStepDelay = 350
 const maxAutoSteps = 50
-const mineLocations = new Set(['0-1', '1-3', '3-0', '3-4', '4-2'])
-const initiallyHiddenSafeCells = new Set(['0-4', '2-4'])
+const mineLocations = new Set([
+  '0-13', '0-14', '1-2', '1-7', '1-10', '1-11', '2-2', '2-5', '2-7', '2-14',
+  '3-12', '5-6', '5-7', '5-13', '7-6', '7-12', '7-13', '8-1', '8-8', '9-0',
+  '9-1', '9-2', '10-4', '10-10', '10-11', '10-12', '11-0', '11-2', '11-3', '11-6',
+  '12-4', '12-12', '12-14', '13-1', '13-3', '13-4', '13-8', '13-10', '14-5', '14-6',
+])
+const initiallyHiddenSafeCells = new Set([
+  '0-1', '0-2', '0-3', '0-4', '0-5', '0-6', '0-7', '0-12', '1-0', '1-1',
+  '1-3', '1-5', '1-6', '1-13', '2-1', '2-9', '2-11', '2-12', '3-0', '3-4',
+  '3-5', '3-11', '6-2', '7-4', '7-5', '7-7', '7-9', '7-11', '8-6', '8-7',
+  '9-4', '9-9', '10-13', '10-14', '12-0',
+])
 
 let activeAutoRun = 0
 
@@ -194,10 +204,11 @@ export const useMinesweeperStore = defineStore('minesweeper', {
       if (autoRun !== activeAutoRun) return
 
       this.isAutoSolving = false
+      const finalMode = this.solverMode as MinesweeperSolverMode
 
-      if (this.solverMode === 'solved') {
+      if (finalMode === 'solved') {
         this.addLog(`Auto solve completed after ${completedSteps} steps.`, 'success')
-      } else if (this.solverMode === 'stuck') {
+      } else if (finalMode === 'stuck') {
         this.addLog(`Auto solve stopped after ${completedSteps} steps.`, 'warning')
       } else {
         this.solverMode = 'stuck'

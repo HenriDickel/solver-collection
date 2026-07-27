@@ -4,7 +4,7 @@
       <p class="eyebrow">Solver Collection</p>
       <h1 id="page-title">Minesweeper Solver</h1>
       <p class="intro">
-        Resolve simple Minesweeper boards with safe-cell and mine-flag deductions.
+        Solve a Minesweeper board with safe-cell and mine-flag deductions.
       </p>
     </section>
 

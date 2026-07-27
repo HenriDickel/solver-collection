@@ -34,31 +34,23 @@
       <div class="solver-controls" :aria-busy="isAutoSolving">
         <button class="clear-button" type="button" @click="sudokuStore.clearBoard()">Reset</button>
         <button
-          v-if="solverMode === 'editing'"
+          v-if="solverMode === 'editing' || solverMode === 'solving'"
           class="solver-button"
           type="button"
-          @click="sudokuStore.startSolver()"
+          :disabled="isAutoSolving"
+          @click="sudokuStore.advanceSolver()"
         >
-          Solve
+          {{ solverMode === 'editing' ? 'Start solving' : 'Solve next step' }}
         </button>
-        <template v-else-if="solverMode === 'solving'">
-          <button
-            class="solver-button"
-            type="button"
-            :disabled="isAutoSolving"
-            @click="sudokuStore.advanceSolver()"
-          >
-            {{ continueLabel }}
-          </button>
-          <button
-            class="auto-button"
-            type="button"
-            :disabled="isAutoSolving"
-            @click="sudokuStore.autoSolve()"
-          >
-            {{ isAutoSolving ? 'Auto solving…' : 'Auto solve' }}
-          </button>
-        </template>
+        <button
+          v-if="solverMode === 'editing' || solverMode === 'solving'"
+          class="auto-button"
+          type="button"
+          :disabled="isAutoSolving"
+          @click="sudokuStore.autoSolve()"
+        >
+          {{ isAutoSolving ? 'Auto solving…' : 'Auto solve' }}
+        </button>
         <span v-else class="solver-status" :class="`solver-status--${solverMode}`">
           {{ solverMode === 'solved' ? 'Solved' : 'No further strategy' }}
         </span>
@@ -70,17 +62,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import SolverTerminal from './SolverTerminal.vue'
 import SudokuCell from './SudokuCell.vue'
 import { useSudokuStore } from '../stores/sudoku'
 
 const sudokuStore = useSudokuStore()
-const { board, candidates, filledCells, isAutoSolving, logs, nextStep, recentlyPlacedCells, solverMode } = storeToRefs(sudokuStore)
-
-const continueLabel = computed(() =>
-  nextStep.value === 'fillSingles' ? 'Place single values' : 'Check candidates',
-)
-
+const { board, candidates, filledCells, isAutoSolving, logs, recentlyPlacedCells, solverMode } = storeToRefs(sudokuStore)
 </script>

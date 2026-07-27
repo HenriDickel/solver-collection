@@ -210,6 +210,11 @@ export const useSudokuStore = defineStore('sudoku', {
       this.addLog(`${insertedCells} values placed. Candidates will be checked again next.`, 'success')
     },
     advanceSolver() {
+      if (this.solverMode === 'editing') {
+        this.startSolver()
+        return
+      }
+
       if (this.solverMode !== 'solving') return
 
       if (this.nextStep === 'checkCandidates') {
@@ -229,7 +234,7 @@ export const useSudokuStore = defineStore('sudoku', {
       this.fillSingleCandidates()
     },
     async autoSolve() {
-      if (this.solverMode !== 'solving' || this.isAutoSolving) return
+      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = activeAutoRun + 1
       activeAutoRun = autoRun
@@ -238,7 +243,7 @@ export const useSudokuStore = defineStore('sudoku', {
 
       let completedSteps = 0
 
-      while (this.solverMode === 'solving' && completedSteps < maxAutoSteps) {
+      while ((this.solverMode === 'editing' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
         await wait(autoStepDelay)
 
         if (autoRun !== activeAutoRun) return

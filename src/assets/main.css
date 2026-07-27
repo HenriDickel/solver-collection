@@ -156,13 +156,14 @@
   }
 
   .mine-board {
-    @apply grid aspect-square grid-cols-5 overflow-hidden rounded-xl border-2 border-ink bg-line;
+    @apply grid aspect-square overflow-hidden rounded-xl border-2 border-ink bg-line;
     grid-auto-rows: minmax(0, 1fr);
+    grid-template-columns: repeat(15, minmax(0, 1fr));
     gap: 1px;
   }
 
   .mine-cell {
-    @apply relative flex aspect-square min-h-0 min-w-0 items-center justify-center text-lg font-extrabold sm:text-2xl;
+    @apply relative flex aspect-square min-h-0 min-w-0 items-center justify-center text-[0.625rem] font-extrabold sm:text-sm;
   }
 
   .mine-cell--hidden {
