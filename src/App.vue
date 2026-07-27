@@ -1,18 +1,22 @@
 <template>
   <div>
     <header class="site-header">
-      <nav class="site-nav" aria-label="Solver navigation">
-        <RouterLink class="site-brand" to="/sudoku">Solver Collection</RouterLink>
-        <div class="solver-nav-links">
-          <RouterLink class="solver-nav-link" to="/sudoku">Sudoku</RouterLink>
-          <RouterLink class="solver-nav-link" to="/minesweeper">Minesweeper</RouterLink>
-          <RouterLink class="solver-nav-link" to="/maze">Maze</RouterLink>
-          <RouterLink class="solver-nav-link" to="/nonogram">Nonogram</RouterLink>
-          <RouterLink class="solver-nav-link" to="/kenken">KenKen</RouterLink>
-          <RouterLink class="solver-nav-link" to="/futoshiki">Futoshiki</RouterLink>
-          <RouterLink class="solver-nav-link" to="/nurikabe">Nurikabe</RouterLink>
-        </div>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <RouterLink class="site-brand" to="/">
+          <span class="site-brand-mark" aria-hidden="true">S</span>
+          <span class="site-brand-copy">
+            <span>Solver Collection</span>
+            <span class="site-brand-subtitle">Interactive puzzle lab</span>
+          </span>
+        </RouterLink>
       </nav>
+      <div class="game-nav-shell">
+        <nav class="game-nav" aria-label="Solver games">
+          <RouterLink v-for="game in games" :key="game.slug" class="game-nav-link" :to="game.path">
+            {{ game.title }}
+          </RouterLink>
+        </nav>
+      </div>
     </header>
 
     <RouterView />
@@ -21,4 +25,5 @@
 
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { games } from './data/games'
 </script>
