@@ -7,6 +7,7 @@ import KenKenPage from '../pages/KenKenPage.vue'
 import FutoshikiPage from '../pages/FutoshikiPage.vue'
 import NurikabePage from '../pages/NurikabePage.vue'
 import HomePage from '../pages/HomePage.vue'
+import LegalPage from '../pages/LegalPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,6 +20,9 @@ const router = createRouter({
     { component: KenKenPage, path: '/kenken' },
     { component: FutoshikiPage, path: '/futoshiki' },
     { component: NurikabePage, path: '/nurikabe' },
+    { component: LegalPage, path: '/datenschutz', props: { page: 'privacy' } },
+    { component: LegalPage, path: '/impressum', props: { page: 'imprint' } },
+    { component: LegalPage, path: '/barrierefreiheit', props: { page: 'accessibility' } },
   ],
 })
 

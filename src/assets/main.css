@@ -72,8 +72,7 @@
   }
 
   .site-brand-mark {
-    @apply flex size-9 shrink-0 items-center justify-center rounded-xl bg-ink text-sm font-black text-white shadow-sm;
-    transform: rotate(-7deg);
+    @apply block size-9 shrink-0 rounded-xl shadow-sm;
   }
 
   .site-brand-copy {
@@ -105,6 +104,26 @@
     @apply bg-accent text-white shadow-sm;
   }
 
+  .site-footer {
+    @apply border-t border-line/80 bg-surface/70;
+  }
+
+  .site-footer-inner {
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-10;
+  }
+
+  .site-footer-copyright {
+    @apply m-0 text-xs font-semibold text-muted;
+  }
+
+  .site-footer-links {
+    @apply flex flex-wrap items-center gap-x-4 gap-y-2;
+  }
+
+  .site-footer-links a {
+    @apply text-xs font-bold text-muted no-underline transition hover:text-accent focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
   .hero {
     @apply mb-10 max-w-xl text-center;
   }
@@ -123,6 +142,63 @@
 
   .intro {
     @apply mb-0 mt-4 text-base leading-7 text-muted;
+  }
+
+  .legal-page {
+    @apply max-w-3xl items-stretch;
+  }
+
+  .legal-card {
+    @apply w-full rounded-card border border-line bg-surface p-6 shadow-card sm:p-10;
+  }
+
+  .legal-back-link {
+    @apply inline-flex items-center gap-2 text-sm font-extrabold text-accent no-underline transition hover:text-ink focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .legal-card .eyebrow {
+    @apply mt-10;
+  }
+
+  .legal-card h1 {
+    @apply text-4xl sm:text-5xl;
+  }
+
+  .legal-lede {
+    @apply mb-0 mt-5 max-w-2xl text-base leading-7 text-muted;
+  }
+
+  .legal-sections {
+    @apply mt-10 space-y-8;
+  }
+
+  .legal-section {
+    @apply border-t border-line pt-7;
+  }
+
+  .legal-section h2 {
+    @apply text-xl;
+  }
+
+  .legal-section p,
+  .legal-section li {
+    @apply text-sm leading-6 text-muted;
+  }
+
+  .legal-section p {
+    @apply mb-0 mt-3;
+  }
+
+  .legal-section ul {
+    @apply mb-0 mt-3 space-y-2 pl-5;
+  }
+
+  .legal-section a {
+    @apply font-bold text-accent underline decoration-accent/35 underline-offset-2 transition hover:text-ink focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .legal-notice {
+    @apply mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900;
   }
 
   .collection-hero {

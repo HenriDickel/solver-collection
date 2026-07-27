@@ -35,7 +35,7 @@
     <section id="games" class="games-section" aria-labelledby="games-title">
       <div class="games-section-header">
         <div>
-          <h2 id="games-title">Pick a puzzle to explore</h2>
+          <h2 id="games-title">SOLVER COLLECTION</h2>
         </div>
       </div>
 
