@@ -200,6 +200,185 @@
     @apply text-rose-600;
   }
 
+  .maze-board {
+    @apply grid aspect-square overflow-hidden rounded-xl border-2 border-ink bg-line;
+    grid-auto-rows: minmax(0, 1fr);
+    grid-template-columns: repeat(15, minmax(0, 1fr));
+    gap: 1px;
+  }
+
+  .maze-cell {
+    @apply relative flex aspect-square min-h-0 min-w-0 items-center justify-center bg-slate-100 text-[0.5rem] font-extrabold sm:text-xs;
+  }
+
+  .maze-cell--wall {
+    @apply bg-ink;
+  }
+
+  .maze-cell--frontier {
+    @apply bg-amber-200;
+  }
+
+  .maze-cell--visited {
+    @apply bg-sky-100;
+  }
+
+  .maze-cell--route {
+    @apply bg-success;
+  }
+
+  .maze-cell--start {
+    @apply bg-accent text-white;
+  }
+
+  .maze-cell--goal {
+    @apply bg-rose-500 text-white;
+  }
+
+  .maze-cell--recently-updated {
+    animation: maze-cell-update 220ms ease-out;
+  }
+
+  .maze-marker {
+    @apply leading-none;
+  }
+
+  .nonogram-workspace {
+    display: grid;
+    grid-template-columns: 3.75rem minmax(0, 1fr);
+    grid-template-rows: 3.75rem minmax(0, 1fr);
+  }
+
+  .nonogram-corner {
+    @apply border-b border-r border-line bg-accent-soft;
+  }
+
+  .nonogram-column-clues {
+    @apply grid border-b border-line bg-accent-soft;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+
+  .nonogram-row-clues {
+    @apply grid border-r border-line bg-accent-soft;
+    grid-template-rows: repeat(10, minmax(0, 1fr));
+  }
+
+  .nonogram-clue {
+    @apply flex gap-0.5 text-[0.625rem] font-bold leading-none text-accent sm:text-xs;
+  }
+
+  .nonogram-clue--column {
+    @apply flex-col items-center justify-end pb-1;
+  }
+
+  .nonogram-clue--row {
+    @apply items-center justify-end pr-1;
+  }
+
+  .nonogram-board {
+    @apply grid aspect-square overflow-hidden border-2 border-ink bg-line;
+    grid-auto-rows: minmax(0, 1fr);
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 1px;
+  }
+
+  .nonogram-cell {
+    @apply aspect-square bg-slate-200;
+  }
+
+  .nonogram-cell--filled {
+    @apply bg-ink;
+  }
+
+  .nonogram-cell--empty {
+    @apply bg-surface;
+  }
+
+  .nonogram-cell--recently-updated {
+    animation: nonogram-cell-update 260ms ease-out;
+  }
+
+  .kenken-board {
+    @apply relative grid aspect-square overflow-hidden rounded-xl border-2 border-ink bg-line;
+    grid-auto-rows: minmax(0, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+  }
+
+  .kenken-cell {
+    @apply relative flex min-h-0 min-w-0 items-center justify-center bg-surface text-3xl font-extrabold text-ink;
+  }
+
+  .kenken-cage-lines {
+    @apply pointer-events-none absolute inset-0 z-10 size-full;
+  }
+
+  .kenken-cage-lines line {
+    stroke: var(--color-ink);
+    stroke-width: 2;
+  }
+
+  .kenken-cell--recently-updated {
+    animation: kenken-cell-update 260ms ease-out;
+  }
+
+  .kenken-cage-label {
+    @apply absolute left-1 top-1 text-[0.625rem] font-extrabold leading-none text-accent sm:left-1.5 sm:top-1.5 sm:text-xs;
+  }
+
+  .kenken-value {
+    @apply mt-2;
+  }
+
+  .futoshiki-board {
+    @apply grid aspect-square rounded-xl border-2 border-ink bg-surface p-2;
+    grid-template-columns: repeat(4, minmax(0, 1fr) 1.25rem) minmax(0, 1fr);
+    grid-template-rows: repeat(4, minmax(0, 1fr) 1.25rem) minmax(0, 1fr);
+  }
+
+  .futoshiki-cell {
+    @apply flex min-h-0 min-w-0 items-center justify-center rounded-md border border-line bg-surface text-xl font-extrabold text-ink sm:text-3xl;
+  }
+
+  .futoshiki-cell--recently-updated {
+    animation: futoshiki-cell-update 260ms ease-out;
+  }
+
+  .futoshiki-inequality {
+    @apply flex items-center justify-center text-lg font-extrabold leading-none text-accent sm:text-2xl;
+  }
+
+  .futoshiki-inequality--vertical {
+    @apply rotate-90;
+  }
+
+  .nurikabe-board {
+    @apply grid aspect-square overflow-hidden rounded-xl border-2 border-ink bg-line;
+    grid-auto-rows: minmax(0, 1fr);
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 1px;
+  }
+
+  .nurikabe-cell {
+    @apply flex aspect-square min-h-0 min-w-0 items-center justify-center bg-slate-200 text-sm font-extrabold text-ink sm:text-lg;
+  }
+
+  .nurikabe-cell--island {
+    @apply bg-surface;
+  }
+
+  .nurikabe-cell--water {
+    @apply bg-ink text-white;
+  }
+
+  .nurikabe-cell--clue {
+    @apply bg-accent text-white;
+  }
+
+  .nurikabe-cell--recently-updated {
+    animation: nurikabe-cell-update 260ms ease-out;
+  }
+
   .cell {
     @apply relative flex aspect-square min-h-0 min-w-0 items-stretch justify-center border-0 bg-surface p-0 text-center font-bold text-ink transition-colors;
   }
@@ -276,6 +455,66 @@
     0% {
       box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0.28);
       transform: scale(0.94);
+    }
+
+    100% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes maze-cell-update {
+    0% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0.35);
+      transform: scale(0.9);
+    }
+
+    100% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes nonogram-cell-update {
+    0% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0.32);
+      transform: scale(0.9);
+    }
+
+    100% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes kenken-cell-update {
+    0% {
+      background-color: #dedefe;
+      transform: scale(0.92);
+    }
+
+    100% {
+      background-color: #ffffff;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes futoshiki-cell-update {
+    0% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0.22);
+      transform: scale(0.9);
+    }
+
+    100% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes nurikabe-cell-update {
+    0% {
+      box-shadow: inset 0 0 0 999px rgb(93 95 239 / 0.32);
+      transform: scale(0.9);
     }
 
     100% {

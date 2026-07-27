@@ -6,6 +6,11 @@
         <div class="solver-nav-links">
           <RouterLink class="solver-nav-link" to="/sudoku">Sudoku</RouterLink>
           <RouterLink class="solver-nav-link" to="/minesweeper">Minesweeper</RouterLink>
+          <RouterLink class="solver-nav-link" to="/maze">Maze</RouterLink>
+          <RouterLink class="solver-nav-link" to="/nonogram">Nonogram</RouterLink>
+          <RouterLink class="solver-nav-link" to="/kenken">KenKen</RouterLink>
+          <RouterLink class="solver-nav-link" to="/futoshiki">Futoshiki</RouterLink>
+          <RouterLink class="solver-nav-link" to="/nurikabe">Nurikabe</RouterLink>
         </div>
       </nav>
     </header>
