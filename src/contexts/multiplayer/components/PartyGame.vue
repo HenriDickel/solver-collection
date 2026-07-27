@@ -149,7 +149,7 @@
 
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
-import type { PlayGame } from '../../types/play-game'
+import type { MultiplayerGame } from '../../shared/types/play-game'
 
 type PartyPhase = 'setup' | 'reveal' | 'discussion' | 'round' | 'results'
 type RatherChoice = 'left' | 'right'
@@ -166,7 +166,7 @@ interface RatherRound {
   right: string
 }
 
-const props = defineProps<{ game: PlayGame }>()
+const props = defineProps<{ game: MultiplayerGame }>()
 
 const imposterRounds: ImposterRound[] = [
   { category: 'Places', word: 'Lighthouse' },
@@ -222,14 +222,11 @@ const nextSecretButtonLabel = computed(() => (
   currentPlayerIndex.value === preparedPlayers.value.length - 1 ? 'Start discussion' : `Hide and pass to ${preparedPlayers.value[currentPlayerIndex.value + 1]}`
 ))
 const rules = computed(() => {
-  const rulesByGame: Record<PlayGame['slug'], string> = {
+  const rulesByGame: Record<MultiplayerGame['slug'], string> = {
     charades: 'Split into teams. One person acts out the prompt while their team guesses before the timer ends.',
     imposter: 'Everyone except one player sees the secret word. Discuss it, then try to identify the Imposter.',
     'kiss-marry-kill': 'Choose one fictional character for each outcome, compare choices, and move on to a fresh trio.',
     'never-have-i-ever': 'Read the statement aloud and use it as a low-pressure conversation starter.',
-    nonogram: '',
-    chess: '',
-    sudoku: '',
     'who-am-i': 'Each player privately receives an identity. Ask the group yes-or-no questions to work out who you are.',
     'would-you-rather': 'Vote privately by passing the device. The group result appears once every player has chosen.',
   }

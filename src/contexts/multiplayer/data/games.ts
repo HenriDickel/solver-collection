@@ -1,36 +1,6 @@
-import type { PlayGame, PlayGameSlug, PlaySection } from '../types/play-game'
+import type { MultiplayerGame, MultiplayerGameSlug } from '../../shared/types/play-game'
 
-export const singleplayerGames: PlayGame[] = [
-  {
-    description: 'Fill the grid at your own pace and use the number pad to finish a classic puzzle.',
-    path: '/play/sudoku',
-    players: '1 player',
-    section: 'singleplayer',
-    slug: 'sudoku',
-    symbol: '9×9',
-    title: 'Sudoku',
-  },
-  {
-    description: 'Play a quick game of chess against a lightweight computer opponent.',
-    path: '/play/chess',
-    players: '1 player',
-    section: 'singleplayer',
-    slug: 'chess',
-    symbol: '♞',
-    title: 'Chess',
-  },
-  {
-    description: 'Turn row and column clues into a tiny pixel picture, one deliberate mark at a time.',
-    path: '/play/nonogram',
-    players: '1 player',
-    section: 'singleplayer',
-    slug: 'nonogram',
-    symbol: '▦',
-    title: 'Nonogram',
-  },
-]
-
-export const multiplayerGames: PlayGame[] = [
+export const multiplayerGames: MultiplayerGame[] = [
   {
     description: 'One player has no secret word. Spot the Imposter through the discussion.',
     path: '/party/imposter',
@@ -87,16 +57,10 @@ export const multiplayerGames: PlayGame[] = [
   },
 ]
 
-export const playGames = [...singleplayerGames, ...multiplayerGames]
+export function getMultiplayerGameBySlug(slug: MultiplayerGameSlug): MultiplayerGame {
+  const game = multiplayerGames.find((candidate) => candidate.slug === slug)
 
-export function getPlayGameBySlug(slug: PlayGameSlug): PlayGame {
-  const game = playGames.find((candidate) => candidate.slug === slug)
-
-  if (!game) throw new Error(`Unknown playable game slug: ${slug}`)
+  if (!game) throw new Error(`Unknown multiplayer game slug: ${slug}`)
 
   return game
-}
-
-export function getPlayGamesForSection(section: PlaySection): PlayGame[] {
-  return section === 'singleplayer' ? singleplayerGames : multiplayerGames
 }

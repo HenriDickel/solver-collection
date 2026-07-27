@@ -31,9 +31,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { games as solverGames } from '../data/games'
-import { getPlayGamesForSection } from '../data/play-games'
-import type { PlaySection } from '../types/play-game'
+import { games as solverGames } from '../contexts/solvers/data/games'
+import { multiplayerGames } from '../contexts/multiplayer/data/games'
+import { singleplayerGames } from '../contexts/singleplayer/data/games'
+import type { PlaySection } from '../contexts/shared/types/play-game'
 
 type CollectionSection = PlaySection | 'solvers'
 
@@ -58,5 +59,8 @@ const sectionCopy = computed(() => (
         title: 'Multiplayer games',
       }
 ))
-const gamesForSection = computed(() => props.section === 'solvers' ? solverGames : getPlayGamesForSection(props.section))
+const gamesForSection = computed(() => {
+  if (props.section === 'solvers') return solverGames
+  return props.section === 'singleplayer' ? singleplayerGames : multiplayerGames
+})
 </script>

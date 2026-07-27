@@ -147,8 +147,9 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { games } from '../data/games'
-import { multiplayerGames, singleplayerGames } from '../data/play-games'
+import { games } from '../contexts/solvers/data/games'
+import { multiplayerGames } from '../contexts/multiplayer/data/games'
+import { singleplayerGames } from '../contexts/singleplayer/data/games'
 
 const visualTiles = ['1', 'x', '3', '+', '>', '9', '.', '2', '^']
 </script>

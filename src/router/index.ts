@@ -2,10 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
 import LegalPage from '../pages/LegalPage.vue'
 import CollectionPage from '../pages/CollectionPage.vue'
-import PlayPage from '../pages/PlayPage.vue'
-import SolverPage from '../pages/SolverPage.vue'
-import { games } from '../data/games'
-import { multiplayerGames, singleplayerGames } from '../data/play-games'
+import SolverPage from '../contexts/solvers/pages/SolverPage.vue'
+import SingleplayerGamePage from '../contexts/singleplayer/pages/SingleplayerGamePage.vue'
+import MultiplayerGamePage from '../contexts/multiplayer/pages/MultiplayerGamePage.vue'
+import { games } from '../contexts/solvers/data/games'
+import { singleplayerGames } from '../contexts/singleplayer/data/games'
+import { multiplayerGames } from '../contexts/multiplayer/data/games'
 
 const gameRoutes = games.map((game) => ({
   component: SolverPage,
@@ -13,8 +15,14 @@ const gameRoutes = games.map((game) => ({
   props: { slug: game.slug },
 }))
 
-const playableGameRoutes = [...singleplayerGames, ...multiplayerGames].map((game) => ({
-  component: PlayPage,
+const singleplayerGameRoutes = singleplayerGames.map((game) => ({
+  component: SingleplayerGamePage,
+  path: game.path,
+  props: { slug: game.slug },
+}))
+
+const multiplayerGameRoutes = multiplayerGames.map((game) => ({
+  component: MultiplayerGamePage,
   path: game.path,
   props: { slug: game.slug },
 }))
@@ -27,7 +35,8 @@ const router = createRouter({
     { component: CollectionPage, path: '/singleplayer', props: { section: 'singleplayer' } },
     { component: CollectionPage, path: '/multiplayer', props: { section: 'multiplayer' } },
     ...gameRoutes,
-    ...playableGameRoutes,
+    ...singleplayerGameRoutes,
+    ...multiplayerGameRoutes,
     { component: LegalPage, path: '/privacy', props: { page: 'privacy' } },
     { component: LegalPage, path: '/legal-notice', props: { page: 'imprint' } },
     { component: LegalPage, path: '/accessibility', props: { page: 'accessibility' } },
