@@ -26,9 +26,17 @@
           <span>{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
         </button>
       </nav>
+      <div class="collection-nav-shell">
+        <nav class="collection-nav" aria-label="Collection categories">
+          <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'solvers' }" to="/solvers">Solvers</RouterLink>
+          <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'singleplayer' }" to="/singleplayer">Singleplayer</RouterLink>
+          <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'multiplayer' }" to="/multiplayer">Multiplayer</RouterLink>
+        </nav>
+      </div>
       <div class="game-nav-shell">
-        <nav class="game-nav" aria-label="Solver games">
-          <RouterLink v-for="game in games" :key="game.slug" class="game-nav-link" :to="game.path">
+        <nav class="game-nav" :aria-label="`${activeSectionLabel} games`">
+          <RouterLink class="game-nav-link game-nav-link--all" :to="activeSectionPath">All {{ activeSectionLabel }}</RouterLink>
+          <RouterLink v-for="game in activeGames" :key="game.slug" class="game-nav-link" :to="game.path">
             {{ game.title }}
           </RouterLink>
         </nav>
@@ -51,9 +59,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { games } from './data/games'
+import { multiplayerGames, singleplayerGames } from './data/play-games'
 import { preloadFutoshikiExamples } from './stores/futoshiki'
 import { preloadKenKenExamples } from './stores/kenken'
 import { preloadMazeExamples } from './stores/maze'
@@ -67,6 +76,21 @@ import type { Theme } from './utils/theme'
 const currentYear = new Date().getFullYear()
 const faviconUrl = `${import.meta.env.BASE_URL}favicon.svg`
 const theme = ref<Theme>(getPreferredTheme())
+const route = useRoute()
+const activeSection = computed(() => {
+  if (route.path.startsWith('/play/') || route.path.startsWith('/singleplayer')) return 'singleplayer'
+  if (route.path.startsWith('/party/') || route.path.startsWith('/multiplayer')) return 'multiplayer'
+  return 'solvers'
+})
+const activeGames = computed(() => {
+  if (activeSection.value === 'singleplayer') return singleplayerGames
+  if (activeSection.value === 'multiplayer') return multiplayerGames
+  return games
+})
+const activeSectionLabel = computed(() => (
+  activeSection.value === 'singleplayer' ? 'Singleplayer' : activeSection.value === 'multiplayer' ? 'Multiplayer' : 'Solvers'
+))
+const activeSectionPath = computed(() => `/${activeSection.value}`)
 
 function toggleTheme(): void {
   const nextTheme: Theme = theme.value === 'dark' ? 'light' : 'dark'
