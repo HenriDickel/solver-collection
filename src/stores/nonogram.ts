@@ -3,11 +3,11 @@ import type {
   NonogramAxis,
   NonogramBoard,
   NonogramCellState,
-  NonogramLog,
-  NonogramLogLevel,
   NonogramResolvedCellState,
-  NonogramSolverMode,
 } from '../types/nonogram'
+import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { getGridCellKey } from '../utils/grid'
+import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const autoStepDelay = 350
 const maxAutoSteps = 50
@@ -24,11 +24,7 @@ const nonogramSolution = [
   '..........',
 ]
 
-let activeAutoRun = 0
-
-function getCellKey(rowIndex: number, columnIndex: number): string {
-  return `${rowIndex}-${columnIndex}`
-}
+const autoRunController = createSolverRunController()
 
 function getClues(line: readonly boolean[]): number[] {
   const clues: number[] = []
@@ -90,10 +86,6 @@ function createInitialBoard(): NonogramBoard {
   )
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
-
 const rowClues = nonogramSolution.map((row) => getClues(Array.from(row, (cell) => cell === '#')))
 const columnClues = Array.from({ length: nonogramSolution[0].length }, (_, columnIndex) =>
   getClues(nonogramSolution.map((row) => row[columnIndex] === '#')),
@@ -103,10 +95,10 @@ export const useNonogramStore = defineStore('nonogram', {
   state: () => ({
     board: createInitialBoard(),
     isAutoSolving: false,
-    logs: [] as NonogramLog[],
+    logs: [] as SolverLog[],
     nextLogId: 1,
     recentlyUpdatedCells: [] as string[],
-    solverMode: 'ready' as NonogramSolverMode,
+    solverMode: 'ready' as SolverMode,
   }),
   getters: {
     cellCount: (state) => state.board.length * state.board[0].length,
@@ -115,7 +107,7 @@ export const useNonogramStore = defineStore('nonogram', {
     columnClues: () => columnClues,
   },
   actions: {
-    addLog(message: string, level: NonogramLogLevel = 'info') {
+    addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
@@ -127,7 +119,7 @@ export const useNonogramStore = defineStore('nonogram', {
       return this.board.map((row) => row[index].state)
     },
     resetBoard() {
-      activeAutoRun += 1
+      autoRunController.cancel()
       this.board = createInitialBoard()
       this.isAutoSolving = false
       this.logs = []
@@ -177,7 +169,7 @@ export const useNonogramStore = defineStore('nonogram', {
 
             const rowIndex = axis === 'row' ? lineIndex : cellIndex
             const columnIndex = axis === 'row' ? cellIndex : lineIndex
-            const cellKey = getCellKey(rowIndex, columnIndex)
+            const cellKey = getGridCellKey(rowIndex, columnIndex)
             const previousState = deductions.get(cellKey)
 
             if (previousState === undefined || previousState === certainState) {
@@ -225,26 +217,25 @@ export const useNonogramStore = defineStore('nonogram', {
     async autoSolve() {
       if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
-      const autoRun = activeAutoRun + 1
-      activeAutoRun = autoRun
+      const autoRun = autoRunController.start()
       this.isAutoSolving = true
       this.addLog('Auto solve started.', 'success')
 
       let completedSteps = 0
 
       while ((this.solverMode === 'ready' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
-        await wait(autoStepDelay)
+        await waitForSolverStep(autoStepDelay)
 
-        if (autoRun !== activeAutoRun) return
+        if (!autoRunController.isCurrent(autoRun)) return
 
         this.advanceSolver()
         completedSteps += 1
       }
 
-      if (autoRun !== activeAutoRun) return
+      if (!autoRunController.isCurrent(autoRun)) return
 
       this.isAutoSolving = false
-      const finalMode = this.solverMode as NonogramSolverMode
+      const finalMode = this.solverMode as SolverMode
 
       if (finalMode === 'solved') {
         this.addLog(`Auto solve completed after ${completedSteps} steps.`, 'success')

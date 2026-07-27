@@ -4,13 +4,13 @@ import type {
   KenKenCage,
   KenKenCell,
   KenKenGrid,
-  KenKenLog,
-  KenKenLogLevel,
   KenKenOperator,
   KenKenPosition,
   KenKenSolution,
-  KenKenSolverMode,
 } from '../types/kenken'
+import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { getGridCellKey } from '../utils/grid'
+import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 4
 const autoStepDelay = 220
@@ -26,11 +26,7 @@ const cages: KenKenCage[] = [
   { cells: [{ rowIndex: 3, columnIndex: 2 }, { rowIndex: 3, columnIndex: 3 }], id: 'h', operator: '+', target: 5 },
 ]
 
-let activeAutoRun = 0
-
-function getCellKey(rowIndex: number, columnIndex: number): string {
-  return `${rowIndex}-${columnIndex}`
-}
+const autoRunController = createSolverRunController()
 
 function getOperatorSymbol(operator: KenKenOperator): string {
   if (operator === '*') return '×'
@@ -168,30 +164,26 @@ function findSolution(grid: KenKenGrid): KenKenSolution | null {
   return null
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
-
 export const useKenKenStore = defineStore('kenken', {
   state: () => ({
     board: createInitialBoard(),
     isAutoSolving: false,
-    logs: [] as KenKenLog[],
+    logs: [] as SolverLog[],
     nextLogId: 1,
     recentlyUpdatedCells: [] as string[],
     solution: null as KenKenSolution | null,
-    solverMode: 'ready' as KenKenSolverMode,
+    solverMode: 'ready' as SolverMode,
   }),
   getters: {
     resolvedCells: (state) => state.board.flat().filter((cell) => cell.value !== null).length,
   },
   actions: {
-    addLog(message: string, level: KenKenLogLevel = 'info') {
+    addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
     resetBoard() {
-      activeAutoRun += 1
+      autoRunController.cancel()
       this.board = createInitialBoard()
       this.isAutoSolving = false
       this.logs = []
@@ -237,7 +229,7 @@ export const useKenKenStore = defineStore('kenken', {
           if (cell.value !== null) continue
 
           cell.value = this.solution[rowIndex][columnIndex]
-          this.recentlyUpdatedCells.push(getCellKey(rowIndex, columnIndex))
+          this.recentlyUpdatedCells.push(getGridCellKey(rowIndex, columnIndex))
           this.addLog(`R${rowIndex + 1} C${columnIndex + 1} = ${cell.value} satisfies its row, column, and cage.`, 'success')
 
           if (this.resolvedCells === boardSize * boardSize) {
@@ -252,26 +244,25 @@ export const useKenKenStore = defineStore('kenken', {
     async autoSolve() {
       if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
-      const autoRun = activeAutoRun + 1
-      activeAutoRun = autoRun
+      const autoRun = autoRunController.start()
       this.isAutoSolving = true
       this.addLog('Auto solve started.', 'success')
 
       let completedSteps = 0
 
       while ((this.solverMode === 'ready' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
-        await wait(autoStepDelay)
+        await waitForSolverStep(autoStepDelay)
 
-        if (autoRun !== activeAutoRun) return
+        if (!autoRunController.isCurrent(autoRun)) return
 
         this.advanceSolver()
         completedSteps += 1
       }
 
-      if (autoRun !== activeAutoRun) return
+      if (!autoRunController.isCurrent(autoRun)) return
 
       this.isAutoSolving = false
-      const finalMode = this.solverMode as KenKenSolverMode
+      const finalMode = this.solverMode as SolverMode
 
       if (finalMode === 'solved') {
         this.addLog(`Auto solve completed after ${completedSteps} steps.`, 'success')

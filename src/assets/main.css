@@ -83,10 +83,6 @@
     @apply mt-0.5 text-[0.625rem] font-bold tracking-[0.1em] text-muted uppercase;
   }
 
-  .site-all-games {
-    @apply inline-flex shrink-0 items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-extrabold text-ink no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
-  }
-
   .game-nav-shell {
     @apply border-t border-line/70 bg-surface/65;
   }
@@ -419,7 +415,7 @@
     @apply w-full rounded-card border bg-surface p-4 shadow-card sm:p-8;
   }
 
-  .board-card--editing {
+  .board-card--ready {
     @apply border-line;
   }
 
@@ -461,14 +457,6 @@
 
   .solver-status--stuck {
     @apply bg-amber-50 text-amber-700;
-  }
-
-  .mode-label {
-    @apply mb-0 mt-1 text-xs font-semibold;
-  }
-
-  .mode-label--editing {
-    @apply text-muted;
   }
 
   .board {

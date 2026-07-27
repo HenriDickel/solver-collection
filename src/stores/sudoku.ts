@@ -1,20 +1,20 @@
 import { defineStore } from 'pinia'
 import type {
-  SolverLog,
-  SolverLogLevel,
-  SolverMode,
   SolverStep,
   SudokuCandidate,
   SudokuCandidateGrid,
   SudokuCellValue,
   SudokuGrid,
 } from '../types/sudoku'
+import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { getGridCellKey } from '../utils/grid'
+import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 const autoStepDelay = 300
 const maxAutoSteps = 100
 
-let activeAutoRun = 0
+const autoRunController = createSolverRunController()
 
 function createInitialBoard(): SudokuGrid {
   return [
@@ -38,14 +38,6 @@ function createEmptyCandidateGrid(): SudokuCandidateGrid {
   return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []))
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
-
-function getCellKey(rowIndex: number, columnIndex: number): string {
-  return `${rowIndex}-${columnIndex}`
-}
-
 export const useSudokuStore = defineStore('sudoku', {
   state: () => ({
     board: createInitialBoard(),
@@ -55,7 +47,7 @@ export const useSudokuStore = defineStore('sudoku', {
     nextLogId: 1,
     nextStep: 'checkCandidates' as SolverStep,
     recentlyPlacedCells: [] as string[],
-    solverMode: 'editing' as SolverMode,
+    solverMode: 'ready' as SolverMode,
   }),
   getters: {
     emptyCells: (state) => state.board.flat().filter((value) => value === null).length,
@@ -63,13 +55,13 @@ export const useSudokuStore = defineStore('sudoku', {
   },
   actions: {
     setCell(rowIndex: number, columnIndex: number, value: SudokuCellValue) {
-      if (this.solverMode === 'editing') {
+      if (this.solverMode === 'ready') {
         this.board[rowIndex][columnIndex] = value
         this.recentlyPlacedCells = []
       }
     },
     clearBoard() {
-      activeAutoRun += 1
+      autoRunController.cancel()
       this.isAutoSolving = false
       this.board = createEmptyBoard()
       this.candidates = createEmptyCandidateGrid()
@@ -77,7 +69,7 @@ export const useSudokuStore = defineStore('sudoku', {
       this.nextLogId = 1
       this.nextStep = 'checkCandidates'
       this.recentlyPlacedCells = []
-      this.solverMode = 'editing'
+      this.solverMode = 'ready'
       this.addLog('Board cleared. Input mode is ready.')
     },
     addLog(message: string, level: SolverLogLevel = 'info') {
@@ -156,7 +148,7 @@ export const useSudokuStore = defineStore('sudoku', {
       return { emptyCells, impossibleCells, singleCandidates }
     },
     startSolver() {
-      if (this.solverMode !== 'editing') return
+      if (this.solverMode !== 'ready') return
 
       this.logs = []
       this.nextLogId = 1
@@ -187,7 +179,7 @@ export const useSudokuStore = defineStore('sudoku', {
           if (this.board[rowIndex][columnIndex] === null && candidates.length === 1) {
             const value = candidates[0]
             this.board[rowIndex][columnIndex] = value
-            this.recentlyPlacedCells.push(getCellKey(rowIndex, columnIndex))
+            this.recentlyPlacedCells.push(getGridCellKey(rowIndex, columnIndex))
             insertedCells += 1
             this.addLog(`R${rowIndex + 1} C${columnIndex + 1} = ${value} placed.`, 'success')
           }
@@ -210,7 +202,7 @@ export const useSudokuStore = defineStore('sudoku', {
       this.addLog(`${insertedCells} values placed. Candidates will be checked again next.`, 'success')
     },
     advanceSolver() {
-      if (this.solverMode === 'editing') {
+      if (this.solverMode === 'ready') {
         this.startSolver()
         return
       }
@@ -236,23 +228,22 @@ export const useSudokuStore = defineStore('sudoku', {
     async autoSolve() {
       if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
-      const autoRun = activeAutoRun + 1
-      activeAutoRun = autoRun
+      const autoRun = autoRunController.start()
       this.isAutoSolving = true
       this.addLog('Auto solve started.', 'success')
 
       let completedSteps = 0
 
-      while ((this.solverMode === 'editing' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
-        await wait(autoStepDelay)
+      while ((this.solverMode === 'ready' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
+        await waitForSolverStep(autoStepDelay)
 
-        if (autoRun !== activeAutoRun) return
+        if (!autoRunController.isCurrent(autoRun)) return
 
         this.advanceSolver()
         completedSteps += 1
       }
 
-      if (autoRun !== activeAutoRun) return
+      if (!autoRunController.isCurrent(autoRun)) return
 
       this.isAutoSolving = false
 

@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import type {
   MinesweeperBoard,
   MinesweeperCell,
-  MinesweeperLog,
-  MinesweeperLogLevel,
-  MinesweeperSolverMode,
 } from '../types/minesweeper'
+import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { getGridCellKey } from '../utils/grid'
+import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 15
 const autoStepDelay = 350
@@ -23,11 +23,7 @@ const initiallyHiddenSafeCells = new Set([
   '9-4', '9-9', '10-13', '10-14', '12-0',
 ])
 
-let activeAutoRun = 0
-
-function getCellKey(rowIndex: number, columnIndex: number): string {
-  return `${rowIndex}-${columnIndex}`
-}
+const autoRunController = createSolverRunController()
 
 function getNeighbors(rowIndex: number, columnIndex: number): Array<[number, number]> {
   const neighbors: Array<[number, number]> = []
@@ -47,17 +43,17 @@ function getNeighbors(rowIndex: number, columnIndex: number): Array<[number, num
 }
 
 function getClue(rowIndex: number, columnIndex: number): number | null {
-  if (mineLocations.has(getCellKey(rowIndex, columnIndex))) {
+  if (mineLocations.has(getGridCellKey(rowIndex, columnIndex))) {
     return null
   }
 
-  return getNeighbors(rowIndex, columnIndex).filter(([row, column]) => mineLocations.has(getCellKey(row, column))).length
+  return getNeighbors(rowIndex, columnIndex).filter(([row, column]) => mineLocations.has(getGridCellKey(row, column))).length
 }
 
 function createInitialBoard(): MinesweeperBoard {
   return Array.from({ length: boardSize }, (_, rowIndex) =>
     Array.from({ length: boardSize }, (_, columnIndex) => {
-      const cellKey = getCellKey(rowIndex, columnIndex)
+      const cellKey = getGridCellKey(rowIndex, columnIndex)
       const isMine = mineLocations.has(cellKey)
       const isHiddenSafeCell = initiallyHiddenSafeCells.has(cellKey)
 
@@ -69,30 +65,26 @@ function createInitialBoard(): MinesweeperBoard {
   )
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
-
 export const useMinesweeperStore = defineStore('minesweeper', {
   state: () => ({
     board: createInitialBoard(),
     isAutoSolving: false,
-    logs: [] as MinesweeperLog[],
+    logs: [] as SolverLog[],
     nextLogId: 1,
     recentlyUpdatedCells: [] as string[],
-    solverMode: 'ready' as MinesweeperSolverMode,
+    solverMode: 'ready' as SolverMode,
   }),
   getters: {
     flaggedMines: (state) => state.board.flat().filter((cell) => cell.state === 'flagged').length,
     mineCount: () => mineLocations.size,
   },
   actions: {
-    addLog(message: string, level: MinesweeperLogLevel = 'info') {
+    addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
     resetBoard() {
-      activeAutoRun += 1
+      autoRunController.cancel()
       this.board = createInitialBoard()
       this.isAutoSolving = false
       this.logs = []
@@ -135,11 +127,11 @@ export const useMinesweeperStore = defineStore('minesweeper', {
 
           if (remainingMines === 0) {
             for (const [row, column] of hiddenNeighbors) {
-              safeCells.add(getCellKey(row, column))
+              safeCells.add(getGridCellKey(row, column))
             }
           } else if (remainingMines === hiddenNeighbors.length) {
             for (const [row, column] of hiddenNeighbors) {
-              mineCells.add(getCellKey(row, column))
+              mineCells.add(getGridCellKey(row, column))
             }
           }
         }
@@ -185,26 +177,25 @@ export const useMinesweeperStore = defineStore('minesweeper', {
     async autoSolve() {
       if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
-      const autoRun = activeAutoRun + 1
-      activeAutoRun = autoRun
+      const autoRun = autoRunController.start()
       this.isAutoSolving = true
       this.addLog('Auto solve started.', 'success')
 
       let completedSteps = 0
 
       while ((this.solverMode === 'ready' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
-        await wait(autoStepDelay)
+        await waitForSolverStep(autoStepDelay)
 
-        if (autoRun !== activeAutoRun) return
+        if (!autoRunController.isCurrent(autoRun)) return
 
         this.advanceSolver()
         completedSteps += 1
       }
 
-      if (autoRun !== activeAutoRun) return
+      if (!autoRunController.isCurrent(autoRun)) return
 
       this.isAutoSolving = false
-      const finalMode = this.solverMode as MinesweeperSolverMode
+      const finalMode = this.solverMode as SolverMode
 
       if (finalMode === 'solved') {
         this.addLog(`Auto solve completed after ${completedSteps} steps.`, 'success')

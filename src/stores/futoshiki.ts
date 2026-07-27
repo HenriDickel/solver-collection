@@ -2,13 +2,13 @@ import { defineStore } from 'pinia'
 import type {
   FutoshikiGrid,
   FutoshikiInequality,
-  FutoshikiLog,
-  FutoshikiLogLevel,
   FutoshikiPosition,
   FutoshikiRelation,
   FutoshikiSolution,
-  FutoshikiSolverMode,
 } from '../types/futoshiki'
+import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { getGridCellKey } from '../utils/grid'
+import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 5
 const autoStepDelay = 180
@@ -29,11 +29,7 @@ const inequalities: FutoshikiInequality[] = [
   { first: { rowIndex: 4, columnIndex: 3 }, relation: '<', second: { rowIndex: 4, columnIndex: 4 } },
 ]
 
-let activeAutoRun = 0
-
-function getCellKey(rowIndex: number, columnIndex: number): string {
-  return `${rowIndex}-${columnIndex}`
-}
+const autoRunController = createSolverRunController()
 
 function createInitialBoard(): FutoshikiGrid {
   return Array.from({ length: boardSize }, () => Array.from({ length: boardSize }, () => null))
@@ -116,31 +112,27 @@ function findSolution(grid: FutoshikiGrid): FutoshikiSolution | null {
   return null
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
-
 export const useFutoshikiStore = defineStore('futoshiki', {
   state: () => ({
     board: createInitialBoard(),
     inequalities,
     isAutoSolving: false,
-    logs: [] as FutoshikiLog[],
+    logs: [] as SolverLog[],
     nextLogId: 1,
     recentlyUpdatedCells: [] as string[],
     solution: null as FutoshikiSolution | null,
-    solverMode: 'ready' as FutoshikiSolverMode,
+    solverMode: 'ready' as SolverMode,
   }),
   getters: {
     resolvedCells: (state) => state.board.flat().filter((value) => value !== null).length,
   },
   actions: {
-    addLog(message: string, level: FutoshikiLogLevel = 'info') {
+    addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
     resetBoard() {
-      activeAutoRun += 1
+      autoRunController.cancel()
       this.board = createInitialBoard()
       this.isAutoSolving = false
       this.logs = []
@@ -184,7 +176,7 @@ export const useFutoshikiStore = defineStore('futoshiki', {
 
           const value = this.solution[rowIndex][columnIndex]
           this.board[rowIndex][columnIndex] = value
-          this.recentlyUpdatedCells.push(getCellKey(rowIndex, columnIndex))
+          this.recentlyUpdatedCells.push(getGridCellKey(rowIndex, columnIndex))
           this.addLog(`R${rowIndex + 1} C${columnIndex + 1} = ${value} satisfies its row, column, and inequalities.`, 'success')
 
           if (this.resolvedCells === boardSize * boardSize) {
@@ -199,26 +191,25 @@ export const useFutoshikiStore = defineStore('futoshiki', {
     async autoSolve() {
       if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
-      const autoRun = activeAutoRun + 1
-      activeAutoRun = autoRun
+      const autoRun = autoRunController.start()
       this.isAutoSolving = true
       this.addLog('Auto solve started.', 'success')
 
       let completedSteps = 0
 
       while ((this.solverMode === 'ready' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
-        await wait(autoStepDelay)
+        await waitForSolverStep(autoStepDelay)
 
-        if (autoRun !== activeAutoRun) return
+        if (!autoRunController.isCurrent(autoRun)) return
 
         this.advanceSolver()
         completedSteps += 1
       }
 
-      if (autoRun !== activeAutoRun) return
+      if (!autoRunController.isCurrent(autoRun)) return
 
       this.isAutoSolving = false
-      const finalMode = this.solverMode as FutoshikiSolverMode
+      const finalMode = this.solverMode as SolverMode
 
       if (finalMode === 'solved') {
         this.addLog(`Auto solve completed after ${completedSteps} steps.`, 'success')

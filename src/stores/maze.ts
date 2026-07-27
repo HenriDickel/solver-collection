@@ -3,11 +3,11 @@ import type {
   MazeBoard,
   MazeCell,
   MazeCellKind,
-  MazeLog,
-  MazeLogLevel,
   MazePosition,
-  MazeSolverMode,
 } from '../types/maze'
+import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { getGridCellKey } from '../utils/grid'
+import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const autoStepDelay = 140
 const maxAutoSteps = 200
@@ -29,11 +29,7 @@ const mazeLayout = [
   '###############',
 ]
 
-let activeAutoRun = 0
-
-function getCellKey(rowIndex: number, columnIndex: number): string {
-  return `${rowIndex}-${columnIndex}`
-}
+const autoRunController = createSolverRunController()
 
 function getCellKind(value: string): MazeCellKind {
   if (value === '#') return 'wall'
@@ -51,28 +47,24 @@ function createInitialBoard(): MazeBoard {
   )
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
-
 export const useMazeStore = defineStore('maze', {
   state: () => ({
     board: createInitialBoard(),
     isAutoSolving: false,
-    logs: [] as MazeLog[],
+    logs: [] as SolverLog[],
     nextLogId: 1,
     previousCells: {} as Record<string, string | null>,
     queue: [] as MazePosition[],
     queueCursor: 0,
     recentlyUpdatedCells: [] as string[],
-    solverMode: 'ready' as MazeSolverMode,
+    solverMode: 'ready' as SolverMode,
   }),
   getters: {
     exploredCells: (state) => state.board.flat().filter((cell) => cell.kind !== 'wall' && cell.state !== 'unvisited').length,
     walkableCells: (state) => state.board.flat().filter((cell) => cell.kind !== 'wall').length,
   },
   actions: {
-    addLog(message: string, level: MazeLogLevel = 'info') {
+    addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
@@ -98,7 +90,7 @@ export const useMazeStore = defineStore('maze', {
       return neighbors
     },
     resetBoard() {
-      activeAutoRun += 1
+      autoRunController.cancel()
       this.board = createInitialBoard()
       this.isAutoSolving = false
       this.logs = []
@@ -115,7 +107,7 @@ export const useMazeStore = defineStore('maze', {
 
       const startRowIndex = 1
       const startColumnIndex = 1
-      const startKey = getCellKey(startRowIndex, startColumnIndex)
+      const startKey = getGridCellKey(startRowIndex, startColumnIndex)
 
       this.logs = []
       this.nextLogId = 1
@@ -172,7 +164,7 @@ export const useMazeStore = defineStore('maze', {
         && this.queue[this.queueCursor].distance === currentDistance
       ) {
         const position = this.queue[this.queueCursor]
-        const cellKey = getCellKey(position.rowIndex, position.columnIndex)
+        const cellKey = getGridCellKey(position.rowIndex, position.columnIndex)
         const cell = this.getCell(position.rowIndex, position.columnIndex)
 
         this.queueCursor += 1
@@ -192,7 +184,7 @@ export const useMazeStore = defineStore('maze', {
 
           if (neighbor.state !== 'unvisited') continue
 
-          const neighborKey = getCellKey(neighborRowIndex, neighborColumnIndex)
+          const neighborKey = getGridCellKey(neighborRowIndex, neighborColumnIndex)
           neighbor.state = 'frontier'
           this.previousCells[neighborKey] = cellKey
           this.queue.push({
@@ -218,26 +210,25 @@ export const useMazeStore = defineStore('maze', {
     async autoSolve() {
       if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
-      const autoRun = activeAutoRun + 1
-      activeAutoRun = autoRun
+      const autoRun = autoRunController.start()
       this.isAutoSolving = true
       this.addLog('Auto solve started.', 'success')
 
       let completedSteps = 0
 
       while ((this.solverMode === 'ready' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
-        await wait(autoStepDelay)
+        await waitForSolverStep(autoStepDelay)
 
-        if (autoRun !== activeAutoRun) return
+        if (!autoRunController.isCurrent(autoRun)) return
 
         this.advanceSolver()
         completedSteps += 1
       }
 
-      if (autoRun !== activeAutoRun) return
+      if (!autoRunController.isCurrent(autoRun)) return
 
       this.isAutoSolving = false
-      const finalMode = this.solverMode as MazeSolverMode
+      const finalMode = this.solverMode as SolverMode
 
       if (finalMode === 'solved') {
         this.addLog(`Auto solve completed after ${completedSteps} steps.`, 'success')

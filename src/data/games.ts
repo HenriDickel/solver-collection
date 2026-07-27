@@ -1,4 +1,4 @@
-import type { SolverGame } from '../types/game'
+import type { GameSlug, SolverGame } from '../types/game'
 
 export const games: SolverGame[] = [
   {
@@ -58,3 +58,11 @@ export const games: SolverGame[] = [
     title: 'Nurikabe',
   },
 ]
+
+export function getGameBySlug(slug: GameSlug): SolverGame {
+  const game = games.find((candidate) => candidate.slug === slug)
+
+  if (!game) throw new Error(`Unknown game slug: ${slug}`)
+
+  return game
+}

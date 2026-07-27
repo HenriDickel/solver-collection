@@ -22,16 +22,11 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
-
-interface TerminalLog {
-  id: number
-  level: 'info' | 'success' | 'warning'
-  message: string
-}
+import type { SolverLog, SolverMode } from '../types/solver'
 
 const { logs, mode } = defineProps<{
-  logs: TerminalLog[]
-  mode: string
+  logs: SolverLog[]
+  mode: SolverMode
 }>()
 
 const terminalLog = ref<HTMLOListElement | null>(null)

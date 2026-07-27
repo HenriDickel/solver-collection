@@ -3,12 +3,12 @@ import type {
   NurikabeBoard,
   NurikabeCellState,
   NurikabeIsland,
-  NurikabeLog,
-  NurikabeLogLevel,
   NurikabeMove,
   NurikabePosition,
-  NurikabeSolverMode,
 } from '../types/nurikabe'
+import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { getGridCellKey } from '../utils/grid'
+import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 9
 const autoStepDelay = 320
@@ -27,11 +27,7 @@ const islands: NurikabeIsland[] = [
   { cells: [{ rowIndex: 7, columnIndex: 5 }, { rowIndex: 7, columnIndex: 6 }, { rowIndex: 7, columnIndex: 7 }], clue: 3, id: 'k' },
 ]
 
-let activeAutoRun = 0
-
-function getCellKey(rowIndex: number, columnIndex: number): string {
-  return `${rowIndex}-${columnIndex}`
-}
+const autoRunController = createSolverRunController()
 
 function getIslandAt(rowIndex: number, columnIndex: number): NurikabeIsland | null {
   return islands.find((island) => island.cells.some(
@@ -76,31 +72,27 @@ function createMoves(): NurikabeMove[] {
   return [...islandMoves, ...waterMoves]
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
-
 export const useNurikabeStore = defineStore('nurikabe', {
   state: () => ({
     board: createInitialBoard(),
     isAutoSolving: false,
-    logs: [] as NurikabeLog[],
+    logs: [] as SolverLog[],
     moveIndex: 0,
     moves: createMoves(),
     nextLogId: 1,
     recentlyUpdatedCells: [] as string[],
-    solverMode: 'ready' as NurikabeSolverMode,
+    solverMode: 'ready' as SolverMode,
   }),
   getters: {
     resolvedCells: (state) => state.board.flat().filter((cell) => cell.state !== 'unknown').length,
   },
   actions: {
-    addLog(message: string, level: NurikabeLogLevel = 'info') {
+    addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
     resetBoard() {
-      activeAutoRun += 1
+      autoRunController.cancel()
       this.board = createInitialBoard()
       this.isAutoSolving = false
       this.logs = []
@@ -142,7 +134,7 @@ export const useNurikabeStore = defineStore('nurikabe', {
         if (cell.state !== 'unknown') continue
 
         cell.state = move.state
-        this.recentlyUpdatedCells.push(getCellKey(position.rowIndex, position.columnIndex))
+        this.recentlyUpdatedCells.push(getGridCellKey(position.rowIndex, position.columnIndex))
       }
 
       this.moveIndex += 1
@@ -156,26 +148,25 @@ export const useNurikabeStore = defineStore('nurikabe', {
     async autoSolve() {
       if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
-      const autoRun = activeAutoRun + 1
-      activeAutoRun = autoRun
+      const autoRun = autoRunController.start()
       this.isAutoSolving = true
       this.addLog('Auto solve started.', 'success')
 
       let completedSteps = 0
 
       while ((this.solverMode === 'ready' || this.solverMode === 'solving') && completedSteps < maxAutoSteps) {
-        await wait(autoStepDelay)
+        await waitForSolverStep(autoStepDelay)
 
-        if (autoRun !== activeAutoRun) return
+        if (!autoRunController.isCurrent(autoRun)) return
 
         this.advanceSolver()
         completedSteps += 1
       }
 
-      if (autoRun !== activeAutoRun) return
+      if (!autoRunController.isCurrent(autoRun)) return
 
       this.isAutoSolving = false
-      const finalMode = this.solverMode as NurikabeSolverMode
+      const finalMode = this.solverMode as SolverMode
 
       if (finalMode === 'solved') {
         this.addLog(`Auto solve completed after ${completedSteps} steps.`, 'success')
