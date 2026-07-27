@@ -9,9 +9,32 @@
   --color-accent: #5d5fef;
   --color-accent-soft: #efefff;
   --color-success: #18836a;
+  --color-strong: #172033;
+  --color-highlight: #dedefe;
+  --color-mine-hidden: #cbd5e1;
+  --color-maze-path: #f1f5f9;
+  --color-nonogram-unknown: #e2e8f0;
+  --color-nurikabe-unknown: #e2e8f0;
   --radius-card: 1.5rem;
   --shadow-card: 0 1.25rem 3.75rem rgb(24 32 60 / 0.1);
   --font-sans: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --color-ink: #eef2ff;
+  --color-muted: #acb7cc;
+  --color-canvas: #0d1320;
+  --color-surface: #181f2e;
+  --color-line: #34405a;
+  --color-accent: #9299ff;
+  --color-accent-soft: #292f5c;
+  --color-success: #56d6ae;
+  --color-strong: #0a1020;
+  --color-highlight: #343b73;
+  --color-mine-hidden: #475569;
+  --color-maze-path: #334155;
+  --color-nonogram-unknown: #334155;
+  --color-nurikabe-unknown: #334155;
 }
 
 @layer base {
@@ -24,6 +47,12 @@
     background-image:
       radial-gradient(circle at 18% -10%, #dcddff 0, transparent 28rem),
       radial-gradient(circle at 82% 8%, #e7f5ff 0, transparent 24rem);
+  }
+
+  :root[data-theme="dark"] body {
+    background-image:
+      radial-gradient(circle at 18% -10%, #242756 0, transparent 28rem),
+      radial-gradient(circle at 82% 8%, #153646 0, transparent 24rem);
   }
 
   button,
@@ -81,6 +110,24 @@
 
   .site-brand-subtitle {
     @apply mt-0.5 text-[0.625rem] font-bold tracking-[0.1em] text-muted uppercase;
+  }
+
+  .theme-toggle {
+    @apply inline-flex shrink-0 items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-extrabold text-muted shadow-sm transition hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .theme-toggle[aria-pressed="true"] {
+    @apply border-accent/40 bg-accent-soft text-accent;
+  }
+
+  .theme-toggle svg {
+    @apply size-4 fill-none stroke-current stroke-2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .theme-toggle span {
+    @apply hidden sm:inline;
   }
 
   .game-nav-shell {
@@ -194,8 +241,12 @@
   }
 
   .collection-hero {
-    @apply relative grid w-full overflow-hidden rounded-[2rem] border border-white/80 bg-surface px-6 py-10 shadow-card sm:px-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center lg:gap-12;
+    @apply relative grid w-full overflow-hidden rounded-[2rem] border border-line bg-surface px-6 py-10 shadow-card sm:px-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center lg:gap-12;
     background-image: linear-gradient(135deg, rgb(255 255 255 / 0.96), rgb(238 239 255 / 0.82));
+  }
+
+  :root[data-theme="dark"] .collection-hero {
+    background-image: linear-gradient(135deg, rgb(24 31 46 / 0.98), rgb(35 41 82 / 0.88));
   }
 
   .collection-hero::before {
@@ -227,7 +278,7 @@
   }
 
   .hero-cta {
-    @apply inline-flex items-center gap-3 rounded-xl bg-ink px-5 py-3 text-sm font-extrabold text-white no-underline shadow-lg shadow-ink/15 transition hover:-translate-y-0.5 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+    @apply inline-flex items-center gap-3 rounded-xl bg-strong px-5 py-3 text-sm font-extrabold text-white no-underline shadow-lg shadow-strong/15 transition hover:-translate-y-0.5 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
   }
 
   .hero-cta span {
@@ -252,7 +303,7 @@
   }
 
   .collection-hero-visual {
-    @apply relative mx-auto mt-12 flex aspect-square w-full max-w-72 items-center justify-center lg:mt-0;
+    @apply relative mx-auto mt-12 flex aspect-square w-full max-w-80 items-center justify-center lg:mt-0;
   }
 
   .hero-orbit {
@@ -271,12 +322,14 @@
   }
 
   .hero-puzzle-core {
-    @apply relative z-10 grid size-[56%] grid-cols-3 overflow-hidden rounded-3xl border-4 border-ink bg-line p-1 shadow-xl shadow-accent/15;
-    transform: rotate(8deg);
+    @apply relative z-10 grid size-[66%] grid-cols-3 grid-rows-3 overflow-hidden rounded-3xl border-4 border-ink bg-line shadow-xl shadow-accent/15;
+    animation: hero-puzzle-float 8.5s ease-in-out infinite;
+    gap: 1px;
+    will-change: transform;
   }
 
   .hero-puzzle-tile {
-    @apply flex items-center justify-center bg-surface text-base font-black text-ink;
+    @apply flex min-h-0 min-w-0 items-center justify-center bg-surface text-base font-black text-ink;
   }
 
   .hero-puzzle-tile:nth-child(2),
@@ -343,7 +396,7 @@
   }
 
   .game-card-symbol {
-    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-ink px-2 text-xs font-black text-white shadow-sm;
+    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-strong px-2 text-xs font-black text-white shadow-sm;
   }
 
   .game-card-category {
@@ -372,7 +425,7 @@
 
   .game-card--minesweeper .game-card-symbol,
   .game-card--nurikabe .game-card-symbol {
-    @apply bg-ink;
+    @apply bg-strong;
   }
 
   .game-card--maze .game-card-symbol,
@@ -436,7 +489,7 @@
   }
 
   .solver-button {
-    @apply min-w-32 cursor-pointer rounded-lg bg-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60;
+    @apply min-w-32 cursor-pointer rounded-lg bg-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60;
   }
 
   .clear-button {
@@ -463,6 +516,14 @@
     @apply bg-amber-50 text-amber-700;
   }
 
+  :root[data-theme="dark"] .solver-status--solved {
+    @apply bg-emerald-950 text-emerald-300;
+  }
+
+  :root[data-theme="dark"] .solver-status--stuck {
+    @apply bg-amber-950 text-amber-300;
+  }
+
   .board {
     @apply grid aspect-square grid-cols-9 overflow-hidden rounded-xl border-2 border-ink bg-line;
     grid-auto-rows: minmax(0, 1fr);
@@ -485,7 +546,7 @@
   }
 
   .mine-cell--hidden {
-    @apply bg-slate-300;
+    background-color: var(--color-mine-hidden);
   }
 
   .mine-cell--revealed {
@@ -494,6 +555,10 @@
 
   .mine-cell--flagged {
     @apply bg-rose-100 text-rose-600;
+  }
+
+  :root[data-theme="dark"] .mine-cell--flagged {
+    @apply bg-rose-950 text-rose-300;
   }
 
   .mine-cell--recently-updated {
@@ -527,10 +592,11 @@
 
   .maze-cell {
     @apply relative flex aspect-square min-h-0 min-w-0 items-center justify-center bg-slate-100 text-[0.5rem] font-extrabold sm:text-xs;
+    background-color: var(--color-maze-path);
   }
 
   .maze-cell--wall {
-    @apply bg-ink;
+    @apply bg-strong;
   }
 
   .maze-cell--frontier {
@@ -551,6 +617,14 @@
 
   .maze-cell--goal {
     @apply bg-rose-500 text-white;
+  }
+
+  :root[data-theme="dark"] .maze-cell--frontier {
+    @apply bg-amber-700;
+  }
+
+  :root[data-theme="dark"] .maze-cell--visited {
+    @apply bg-sky-800;
   }
 
   .maze-cell--recently-updated {
@@ -602,10 +676,11 @@
 
   .nonogram-cell {
     @apply aspect-square bg-slate-200;
+    background-color: var(--color-nonogram-unknown);
   }
 
   .nonogram-cell--filled {
-    @apply bg-ink;
+    @apply bg-strong;
   }
 
   .nonogram-cell--empty {
@@ -679,6 +754,7 @@
 
   .nurikabe-cell {
     @apply flex aspect-square min-h-0 min-w-0 items-center justify-center bg-slate-200 text-sm font-extrabold text-ink sm:text-lg;
+    background-color: var(--color-nurikabe-unknown);
   }
 
   .nurikabe-cell--island {
@@ -686,7 +762,7 @@
   }
 
   .nurikabe-cell--water {
-    @apply bg-ink text-white;
+    @apply bg-strong text-white;
   }
 
   .nurikabe-cell--clue {
@@ -735,12 +811,12 @@
 
   @keyframes cell-highlight {
     0% {
-      background-color: #dedefe;
+      background-color: var(--color-highlight);
       transform: scale(0.94);
     }
 
     100% {
-      background-color: #ffffff;
+      background-color: var(--color-surface);
       transform: scale(1);
     }
   }
@@ -795,12 +871,12 @@
 
   @keyframes kenken-cell-update {
     0% {
-      background-color: #dedefe;
+      background-color: var(--color-highlight);
       transform: scale(0.92);
     }
 
     100% {
-      background-color: #ffffff;
+      background-color: var(--color-surface);
       transform: scale(1);
     }
   }
@@ -837,6 +913,17 @@
 
     50% {
       transform: rotate(9deg) scale(1.04);
+    }
+  }
+
+  @keyframes hero-puzzle-float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(6deg);
+    }
+
+    50% {
+      transform: translateY(-0.3rem) rotate(4deg);
     }
   }
 
