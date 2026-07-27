@@ -15,9 +15,9 @@ const router = createRouter({
   routes: [
     { component: HomePage, path: '/' },
     ...gameRoutes,
-    { component: LegalPage, path: '/datenschutz', props: { page: 'privacy' } },
-    { component: LegalPage, path: '/impressum', props: { page: 'imprint' } },
-    { component: LegalPage, path: '/barrierefreiheit', props: { page: 'accessibility' } },
+    { component: LegalPage, path: '/privacy', props: { page: 'privacy' } },
+    { component: LegalPage, path: '/legal-notice', props: { page: 'imprint' } },
+    { component: LegalPage, path: '/accessibility', props: { page: 'accessibility' } },
   ],
 })
 

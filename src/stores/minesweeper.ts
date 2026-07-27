@@ -5,6 +5,7 @@ import type {
 } from '../types/minesweeper'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
 import { getGridCellKey } from '../utils/grid'
+import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 15
@@ -42,27 +43,74 @@ function getNeighbors(rowIndex: number, columnIndex: number): Array<[number, num
   return neighbors
 }
 
-function getClue(rowIndex: number, columnIndex: number): number | null {
-  if (mineLocations.has(getGridCellKey(rowIndex, columnIndex))) {
+function getClue(rowIndex: number, columnIndex: number, mines: ReadonlySet<string>): number | null {
+  if (mines.has(getGridCellKey(rowIndex, columnIndex))) {
     return null
   }
 
-  return getNeighbors(rowIndex, columnIndex).filter(([row, column]) => mineLocations.has(getGridCellKey(row, column))).length
+  return getNeighbors(rowIndex, columnIndex).filter(([row, column]) => mines.has(getGridCellKey(row, column))).length
 }
 
-function createInitialBoard(): MinesweeperBoard {
+function createBoard(mines: ReadonlySet<string>, hiddenSafeCells: ReadonlySet<string>): MinesweeperBoard {
   return Array.from({ length: boardSize }, (_, rowIndex) =>
     Array.from({ length: boardSize }, (_, columnIndex) => {
       const cellKey = getGridCellKey(rowIndex, columnIndex)
-      const isMine = mineLocations.has(cellKey)
-      const isHiddenSafeCell = initiallyHiddenSafeCells.has(cellKey)
+      const isMine = mines.has(cellKey)
+      const isHiddenSafeCell = hiddenSafeCells.has(cellKey)
 
       return {
-        clue: getClue(rowIndex, columnIndex),
+        clue: getClue(rowIndex, columnIndex, mines),
         state: isMine || isHiddenSafeCell ? 'hidden' : 'revealed',
       }
     }),
   )
+}
+
+function createInitialBoard(): MinesweeperBoard {
+  return createBoard(mineLocations, initiallyHiddenSafeCells)
+}
+
+function revealSafeArea(board: MinesweeperBoard, rowIndex: number, columnIndex: number): void {
+  const pendingCells: Array<[number, number]> = [[rowIndex, columnIndex]]
+  const visitedCells = new Set<string>()
+
+  while (pendingCells.length > 0) {
+    const [currentRowIndex, currentColumnIndex] = pendingCells.pop() as [number, number]
+    const cellKey = getGridCellKey(currentRowIndex, currentColumnIndex)
+
+    if (visitedCells.has(cellKey)) continue
+
+    visitedCells.add(cellKey)
+    const cell = board[currentRowIndex][currentColumnIndex]
+    cell.state = 'revealed'
+
+    if (cell.clue !== 0) continue
+
+    for (const [neighborRowIndex, neighborColumnIndex] of getNeighbors(currentRowIndex, currentColumnIndex)) {
+      if (board[neighborRowIndex][neighborColumnIndex].clue !== null) {
+        pendingCells.push([neighborRowIndex, neighborColumnIndex])
+      }
+    }
+  }
+}
+
+function createRandomBoard(): MinesweeperBoard {
+  const startRowIndex = Math.floor(boardSize / 2)
+  const startColumnIndex = Math.floor(boardSize / 2)
+  const protectedCells = new Set([
+    getGridCellKey(startRowIndex, startColumnIndex),
+    ...getNeighbors(startRowIndex, startColumnIndex).map(([rowIndex, columnIndex]) => getGridCellKey(rowIndex, columnIndex)),
+  ])
+  const availableCells = Array.from({ length: boardSize * boardSize }, (_, index) => {
+    const rowIndex = Math.floor(index / boardSize)
+    const columnIndex = index % boardSize
+    return getGridCellKey(rowIndex, columnIndex)
+  }).filter((cellKey) => !protectedCells.has(cellKey))
+  const randomMines = new Set(shuffle(availableCells).slice(0, mineLocations.size))
+  const board = createBoard(randomMines, new Set(availableCells))
+
+  revealSafeArea(board, startRowIndex, startColumnIndex)
+  return board
 }
 
 export const useMinesweeperStore = defineStore('minesweeper', {
@@ -92,6 +140,16 @@ export const useMinesweeperStore = defineStore('minesweeper', {
       this.recentlyUpdatedCells = []
       this.solverMode = 'ready'
       this.addLog('Board reset. The solver is ready.')
+    },
+    loadRandomExample() {
+      autoRunController.cancel()
+      this.board = createRandomBoard()
+      this.isAutoSolving = false
+      this.logs = []
+      this.nextLogId = 1
+      this.recentlyUpdatedCells = []
+      this.solverMode = 'ready'
+      this.addLog('Random Minesweeper board generated.')
     },
     getCell(rowIndex: number, columnIndex: number): MinesweeperCell {
       return this.board[rowIndex][columnIndex]

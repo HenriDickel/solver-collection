@@ -8,7 +8,7 @@
     :title="title"
     @advance="mazeStore.advanceSolver()"
     @auto-solve="mazeStore.autoSolve()"
-    @reset="mazeStore.resetBoard()"
+    @random="mazeStore.loadRandomExample()"
   >
     <div class="maze-board" role="grid" :aria-label="`${title} board`">
       <template v-for="(row, rowIndex) in board" :key="rowIndex">

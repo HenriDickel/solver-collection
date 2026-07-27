@@ -8,12 +8,13 @@ import type {
 } from '../types/nurikabe'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
 import { getGridCellKey } from '../utils/grid'
+import { randomInteger } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 9
 const autoStepDelay = 320
 const maxAutoSteps = 25
-const islands: NurikabeIsland[] = [
+const baseIslands: NurikabeIsland[] = [
   { cells: [{ rowIndex: 1, columnIndex: 1 }, { rowIndex: 1, columnIndex: 2 }, { rowIndex: 1, columnIndex: 3 }], clue: 3, id: 'a' },
   { cells: [{ rowIndex: 1, columnIndex: 5 }], clue: 1, id: 'b' },
   { cells: [{ rowIndex: 1, columnIndex: 7 }], clue: 1, id: 'c' },
@@ -29,16 +30,20 @@ const islands: NurikabeIsland[] = [
 
 const autoRunController = createSolverRunController()
 
-function getIslandAt(rowIndex: number, columnIndex: number): NurikabeIsland | null {
+function getIslandAt(
+  islands: readonly NurikabeIsland[],
+  rowIndex: number,
+  columnIndex: number,
+): NurikabeIsland | null {
   return islands.find((island) => island.cells.some(
     (cell) => cell.rowIndex === rowIndex && cell.columnIndex === columnIndex,
   )) ?? null
 }
 
-function createInitialBoard(): NurikabeBoard {
+function createBoard(islands: readonly NurikabeIsland[]): NurikabeBoard {
   return Array.from({ length: boardSize }, (_, rowIndex) =>
     Array.from({ length: boardSize }, (_, columnIndex) => {
-      const island = getIslandAt(rowIndex, columnIndex)
+      const island = getIslandAt(islands, rowIndex, columnIndex)
       const isClueCell = island?.cells[0].rowIndex === rowIndex && island.cells[0].columnIndex === columnIndex
 
       return {
@@ -50,7 +55,7 @@ function createInitialBoard(): NurikabeBoard {
   )
 }
 
-function createMoves(): NurikabeMove[] {
+function createMoves(islands: readonly NurikabeIsland[]): NurikabeMove[] {
   const islandMoves = islands
     .filter((island) => island.cells.length > 1)
     .map((island) => ({
@@ -61,7 +66,7 @@ function createMoves(): NurikabeMove[] {
 
   const waterCells = Array.from({ length: boardSize }, (_, rowIndex) =>
     Array.from({ length: boardSize }, (_, columnIndex) => ({ rowIndex, columnIndex })),
-  ).flat().filter((cell) => getIslandAt(cell.rowIndex, cell.columnIndex) === null)
+  ).flat().filter((cell) => getIslandAt(islands, cell.rowIndex, cell.columnIndex) === null)
 
   const waterMoves = [0, 3, 6].map((rowStart) => ({
     cells: waterCells.filter((cell) => cell.rowIndex >= rowStart && cell.rowIndex < rowStart + 3),
@@ -72,17 +77,50 @@ function createMoves(): NurikabeMove[] {
   return [...islandMoves, ...waterMoves]
 }
 
+function createTemplateVariant(): NurikabeIsland[] {
+  const transforms: Array<(position: NurikabePosition) => NurikabePosition> = [
+    ({ rowIndex, columnIndex }) => ({ rowIndex, columnIndex }),
+    ({ rowIndex, columnIndex }) => ({ rowIndex: columnIndex, columnIndex: boardSize - 1 - rowIndex }),
+    ({ rowIndex, columnIndex }) => ({ rowIndex: boardSize - 1 - rowIndex, columnIndex: boardSize - 1 - columnIndex }),
+    ({ rowIndex, columnIndex }) => ({ rowIndex: boardSize - 1 - columnIndex, columnIndex: rowIndex }),
+    ({ rowIndex, columnIndex }) => ({ rowIndex, columnIndex: boardSize - 1 - columnIndex }),
+    ({ rowIndex, columnIndex }) => ({ rowIndex: boardSize - 1 - rowIndex, columnIndex }),
+    ({ rowIndex, columnIndex }) => ({ rowIndex: columnIndex, columnIndex: rowIndex }),
+    ({ rowIndex, columnIndex }) => ({ rowIndex: boardSize - 1 - columnIndex, columnIndex: boardSize - 1 - rowIndex }),
+  ]
+  const transform = transforms[randomInteger(transforms.length)]
+
+  return baseIslands.map((island) => {
+    const cells = island.cells.map((cell) => transform(cell))
+    const clueIndex = randomInteger(cells.length)
+
+    return {
+      cells: [cells[clueIndex], ...cells.filter((_, index) => index !== clueIndex)],
+      clue: island.clue,
+      id: island.id,
+    }
+  })
+}
+
 export const useNurikabeStore = defineStore('nurikabe', {
-  state: () => ({
-    board: createInitialBoard(),
-    isAutoSolving: false,
-    logs: [] as SolverLog[],
-    moveIndex: 0,
-    moves: createMoves(),
-    nextLogId: 1,
-    recentlyUpdatedCells: [] as string[],
-    solverMode: 'ready' as SolverMode,
-  }),
+  state: () => {
+    const islands = baseIslands.map((island) => ({
+      ...island,
+      cells: island.cells.map((cell) => ({ ...cell })),
+    }))
+
+    return {
+      board: createBoard(islands),
+      isAutoSolving: false,
+      islands,
+      logs: [] as SolverLog[],
+      moveIndex: 0,
+      moves: createMoves(islands),
+      nextLogId: 1,
+      recentlyUpdatedCells: [] as string[],
+      solverMode: 'ready' as SolverMode,
+    }
+  },
   getters: {
     resolvedCells: (state) => state.board.flat().filter((cell) => cell.state !== 'unknown').length,
   },
@@ -93,15 +131,28 @@ export const useNurikabeStore = defineStore('nurikabe', {
     },
     resetBoard() {
       autoRunController.cancel()
-      this.board = createInitialBoard()
+      this.board = createBoard(this.islands)
       this.isAutoSolving = false
       this.logs = []
       this.moveIndex = 0
-      this.moves = createMoves()
+      this.moves = createMoves(this.islands)
       this.nextLogId = 1
       this.recentlyUpdatedCells = []
       this.solverMode = 'ready'
       this.addLog('Puzzle reset. The solver is ready.')
+    },
+    loadRandomExample() {
+      autoRunController.cancel()
+      this.islands = createTemplateVariant()
+      this.board = createBoard(this.islands)
+      this.isAutoSolving = false
+      this.logs = []
+      this.moveIndex = 0
+      this.moves = createMoves(this.islands)
+      this.nextLogId = 1
+      this.recentlyUpdatedCells = []
+      this.solverMode = 'ready'
+      this.addLog('Random Nurikabe template variation loaded.')
     },
     startSolver() {
       if (this.solverMode !== 'ready') return

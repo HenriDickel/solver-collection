@@ -8,7 +8,7 @@
     :title="title"
     @advance="sudokuStore.advanceSolver()"
     @auto-solve="sudokuStore.autoSolve()"
-    @reset="sudokuStore.clearBoard()"
+    @random="sudokuStore.loadRandomExample()"
   >
     <div class="board" :class="{ 'board--solving': solverMode !== 'ready' }" :aria-label="`${title} board`">
       <template v-for="(row, rowIndex) in board" :key="rowIndex">
@@ -18,10 +18,8 @@
           :candidates="candidates[rowIndex][columnIndex]"
           :cell="cell"
           :column-index="columnIndex"
-          :is-solving="solverMode !== 'ready'"
           :is-recently-filled="recentlyPlacedCells.includes(`${rowIndex}-${columnIndex}`)"
           :row-index="rowIndex"
-          @update="sudokuStore.setCell(rowIndex, columnIndex, $event)"
         />
       </template>
     </div>

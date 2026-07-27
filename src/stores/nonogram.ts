@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import type {
-  NonogramAxis,
   NonogramBoard,
   NonogramCellState,
   NonogramResolvedCellState,
 } from '../types/nonogram'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
 import { getGridCellKey } from '../utils/grid'
+import { randomInteger } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const autoStepDelay = 350
@@ -80,53 +80,169 @@ function getPossiblePatterns(
   return patterns
 }
 
-function createInitialBoard(): NonogramBoard {
-  return nonogramSolution.map((row) =>
+function getClueSets(solution: readonly string[]) {
+  return {
+    columnClues: Array.from({ length: solution[0].length }, (_, columnIndex) =>
+      getClues(solution.map((row) => row[columnIndex] === '#')),
+    ),
+    rowClues: solution.map((row) => getClues(Array.from(row, (cell) => cell === '#'))),
+  }
+}
+
+function findCertainCells(
+  board: readonly NonogramCellState[][],
+  rowClues: readonly number[][],
+  columnClues: readonly number[][],
+): Map<string, NonogramResolvedCellState> | null {
+  const deductions = new Map<string, NonogramResolvedCellState>()
+
+  for (const axis of ['row', 'column'] as const) {
+    const cluesForAxis = axis === 'row' ? rowClues : columnClues
+
+    for (let lineIndex = 0; lineIndex < cluesForAxis.length; lineIndex += 1) {
+      const line = axis === 'row'
+        ? board[lineIndex]
+        : board.map((row) => row[lineIndex])
+      const patterns = getPossiblePatterns(line, cluesForAxis[lineIndex])
+
+      if (patterns.length === 0) return null
+
+      for (let cellIndex = 0; cellIndex < line.length; cellIndex += 1) {
+        const certainState = patterns[0][cellIndex]
+        const isCertain = patterns.every((pattern) => pattern[cellIndex] === certainState)
+
+        if (!isCertain || line[cellIndex] !== 'unknown') continue
+
+        const rowIndex = axis === 'row' ? lineIndex : cellIndex
+        const columnIndex = axis === 'row' ? cellIndex : lineIndex
+        const cellKey = getGridCellKey(rowIndex, columnIndex)
+        const previousState = deductions.get(cellKey)
+
+        if (previousState === undefined || previousState === certainState) {
+          deductions.set(cellKey, certainState)
+        }
+      }
+    }
+  }
+
+  return deductions
+}
+
+function createBoard(solution: readonly string[]): NonogramBoard {
+  return solution.map((row) =>
     Array.from(row, () => ({ state: 'unknown' as NonogramCellState })),
   )
 }
 
-const rowClues = nonogramSolution.map((row) => getClues(Array.from(row, (cell) => cell === '#')))
-const columnClues = Array.from({ length: nonogramSolution[0].length }, (_, columnIndex) =>
-  getClues(nonogramSolution.map((row) => row[columnIndex] === '#')),
-)
+function createRandomCandidate(): string[] {
+  const size = nonogramSolution.length
+  const grid = Array.from({ length: size }, () => Array.from({ length: size }, () => '.'))
+
+  for (let shapeIndex = 0; shapeIndex < 4 + randomInteger(4); shapeIndex += 1) {
+    const height = 1 + randomInteger(4)
+    const width = 1 + randomInteger(4)
+    const rowStart = randomInteger(size - height + 1)
+    const columnStart = randomInteger(size - width + 1)
+
+    for (let rowIndex = rowStart; rowIndex < rowStart + height; rowIndex += 1) {
+      for (let columnIndex = columnStart; columnIndex < columnStart + width; columnIndex += 1) {
+        grid[rowIndex][columnIndex] = '#'
+      }
+    }
+  }
+
+  return grid.map((row) => row.join(''))
+}
+
+function isSolvableByDeductions(solution: readonly string[]): boolean {
+  const { columnClues, rowClues } = getClueSets(solution)
+  const board = Array.from(
+    { length: solution.length },
+    () => Array.from({ length: solution[0].length }, () => 'unknown' as NonogramCellState),
+  )
+
+  for (let step = 0; step < maxAutoSteps; step += 1) {
+    const deductions = findCertainCells(board, rowClues, columnClues)
+
+    if (deductions === null || deductions.size === 0) return false
+
+    for (const [cellKey, state] of deductions) {
+      const [rowIndex, columnIndex] = cellKey.split('-').map(Number)
+      board[rowIndex][columnIndex] = state
+    }
+
+    if (board.flat().every((cell) => cell !== 'unknown')) return true
+  }
+
+  return false
+}
+
+function createRandomSolution(): string[] {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const candidate = createRandomCandidate()
+
+    if (isSolvableByDeductions(candidate)) return candidate
+  }
+
+  return nonogramSolution
+}
+
+function createPuzzle(solution: readonly string[]) {
+  return {
+    board: createBoard(solution),
+    ...getClueSets(solution),
+  }
+}
 
 export const useNonogramStore = defineStore('nonogram', {
-  state: () => ({
-    board: createInitialBoard(),
-    isAutoSolving: false,
-    logs: [] as SolverLog[],
-    nextLogId: 1,
-    recentlyUpdatedCells: [] as string[],
-    solverMode: 'ready' as SolverMode,
-  }),
+  state: () => {
+    const puzzle = createPuzzle(nonogramSolution)
+
+    return {
+      board: puzzle.board,
+      columnClues: puzzle.columnClues,
+      isAutoSolving: false,
+      logs: [] as SolverLog[],
+      nextLogId: 1,
+      recentlyUpdatedCells: [] as string[],
+      rowClues: puzzle.rowClues,
+      solverMode: 'ready' as SolverMode,
+    }
+  },
   getters: {
     cellCount: (state) => state.board.length * state.board[0].length,
     knownCells: (state) => state.board.flat().filter((cell) => cell.state !== 'unknown').length,
-    rowClues: () => rowClues,
-    columnClues: () => columnClues,
   },
   actions: {
     addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
-    getLine(axis: NonogramAxis, index: number): NonogramCellState[] {
-      if (axis === 'row') {
-        return this.board[index].map((cell) => cell.state)
-      }
-
-      return this.board.map((row) => row[index].state)
-    },
     resetBoard() {
       autoRunController.cancel()
-      this.board = createInitialBoard()
+      const puzzle = createPuzzle(nonogramSolution)
+      this.board = puzzle.board
+      this.columnClues = puzzle.columnClues
       this.isAutoSolving = false
       this.logs = []
       this.nextLogId = 1
       this.recentlyUpdatedCells = []
+      this.rowClues = puzzle.rowClues
       this.solverMode = 'ready'
       this.addLog('Puzzle reset. The solver is ready.')
+    },
+    loadRandomExample() {
+      autoRunController.cancel()
+      const puzzle = createPuzzle(createRandomSolution())
+      this.board = puzzle.board
+      this.columnClues = puzzle.columnClues
+      this.isAutoSolving = false
+      this.logs = []
+      this.nextLogId = 1
+      this.recentlyUpdatedCells = []
+      this.rowClues = puzzle.rowClues
+      this.solverMode = 'ready'
+      this.addLog('Random Nonogram picture generated.')
     },
     startSolver() {
       if (this.solverMode !== 'ready') return
@@ -146,37 +262,13 @@ export const useNonogramStore = defineStore('nonogram', {
       this.recentlyUpdatedCells = []
       this.addLog('Checking all row and column clues.')
 
-      const deductions = new Map<string, NonogramResolvedCellState>()
+      const boardStates = this.board.map((row) => row.map((cell) => cell.state))
+      const deductions = findCertainCells(boardStates, this.rowClues, this.columnClues)
 
-      for (const axis of ['row', 'column'] as const) {
-        const cluesForAxis = axis === 'row' ? rowClues : columnClues
-
-        for (let lineIndex = 0; lineIndex < cluesForAxis.length; lineIndex += 1) {
-          const line = this.getLine(axis, lineIndex)
-          const patterns = getPossiblePatterns(line, cluesForAxis[lineIndex])
-
-          if (patterns.length === 0) {
-            this.solverMode = 'stuck'
-            this.addLog(`The ${axis} ${lineIndex + 1} conflicts with its clues.`, 'warning')
-            return
-          }
-
-          for (let cellIndex = 0; cellIndex < line.length; cellIndex += 1) {
-            const certainState = patterns[0][cellIndex]
-            const isCertain = patterns.every((pattern) => pattern[cellIndex] === certainState)
-
-            if (!isCertain || line[cellIndex] !== 'unknown') continue
-
-            const rowIndex = axis === 'row' ? lineIndex : cellIndex
-            const columnIndex = axis === 'row' ? cellIndex : lineIndex
-            const cellKey = getGridCellKey(rowIndex, columnIndex)
-            const previousState = deductions.get(cellKey)
-
-            if (previousState === undefined || previousState === certainState) {
-              deductions.set(cellKey, certainState)
-            }
-          }
-        }
+      if (deductions === null) {
+        this.solverMode = 'stuck'
+        this.addLog('The current board conflicts with its clues.', 'warning')
+        return
       }
 
       let filledCells = 0

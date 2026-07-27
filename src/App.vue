@@ -23,11 +23,11 @@
 
     <footer class="site-footer">
       <div class="site-footer-inner">
-        <p class="site-footer-copyright">© {{ currentYear }} Solver Collection</p>
-        <nav class="site-footer-links" aria-label="Rechtliche Informationen">
-          <RouterLink to="/datenschutz">Datenschutz</RouterLink>
-          <RouterLink to="/impressum">Impressum</RouterLink>
-          <RouterLink to="/barrierefreiheit">Barrierefreiheit</RouterLink>
+        <p class="site-footer-copyright">&copy; {{ currentYear }} Solver Collection</p>
+        <nav class="site-footer-links" aria-label="Legal information">
+          <RouterLink to="/privacy">Privacy</RouterLink>
+          <RouterLink to="/legal-notice">Legal notice</RouterLink>
+          <RouterLink to="/accessibility">Accessibility</RouterLink>
         </nav>
       </div>
     </footer>

@@ -8,7 +8,7 @@
     :title="title"
     @advance="nurikabeStore.advanceSolver()"
     @auto-solve="nurikabeStore.autoSolve()"
-    @reset="nurikabeStore.resetBoard()"
+    @random="nurikabeStore.loadRandomExample()"
   >
     <div class="nurikabe-board" role="grid" :aria-label="`${title} board`">
       <template v-for="(row, rowIndex) in board" :key="rowIndex">

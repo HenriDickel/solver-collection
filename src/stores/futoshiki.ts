@@ -8,12 +8,13 @@ import type {
 } from '../types/futoshiki'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
 import { getGridCellKey } from '../utils/grid'
+import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 5
 const autoStepDelay = 180
 const maxAutoSteps = 35
-const inequalities: FutoshikiInequality[] = [
+const baseInequalities: FutoshikiInequality[] = [
   { first: { rowIndex: 0, columnIndex: 0 }, relation: '<', second: { rowIndex: 0, columnIndex: 1 } },
   { first: { rowIndex: 0, columnIndex: 1 }, relation: '<', second: { rowIndex: 0, columnIndex: 2 } },
   { first: { rowIndex: 0, columnIndex: 0 }, relation: '<', second: { rowIndex: 1, columnIndex: 0 } },
@@ -35,6 +36,31 @@ function createInitialBoard(): FutoshikiGrid {
   return Array.from({ length: boardSize }, () => Array.from({ length: boardSize }, () => null))
 }
 
+function createRandomSolution(): FutoshikiSolution {
+  const rowIndexes = shuffle([0, 1, 2, 3, 4])
+  const columnIndexes = shuffle([0, 1, 2, 3, 4])
+  const values = shuffle([1, 2, 3, 4, 5])
+
+  return rowIndexes.map((rowIndex) =>
+    columnIndexes.map((columnIndex) => values[(rowIndex + columnIndex) % boardSize]),
+  )
+}
+
+function createRandomInequalities(solution: FutoshikiSolution): FutoshikiInequality[] {
+  return baseInequalities.map((inequality) => {
+    const first = { ...inequality.first }
+    const second = { ...inequality.second }
+    const firstValue = solution[first.rowIndex][first.columnIndex]
+    const secondValue = solution[second.rowIndex][second.columnIndex]
+
+    return {
+      first,
+      relation: firstValue < secondValue ? '<' : '>',
+      second,
+    }
+  })
+}
+
 function cloneGrid(grid: FutoshikiGrid): FutoshikiGrid {
   return grid.map((row) => [...row])
 }
@@ -47,7 +73,7 @@ function hasUniqueValues(values: readonly number[]): boolean {
   return new Set(values).size === values.length
 }
 
-function isGridValid(grid: FutoshikiGrid): boolean {
+function isGridValid(grid: FutoshikiGrid, inequalities: readonly FutoshikiInequality[]): boolean {
   for (let index = 0; index < boardSize; index += 1) {
     const rowValues = grid[index].filter((value): value is number => value !== null)
     const columnValues = grid.map((row) => row[index]).filter((value): value is number => value !== null)
@@ -63,14 +89,19 @@ function isGridValid(grid: FutoshikiGrid): boolean {
   })
 }
 
-function getCandidates(grid: FutoshikiGrid, rowIndex: number, columnIndex: number): number[] {
+function getCandidates(
+  grid: FutoshikiGrid,
+  rowIndex: number,
+  columnIndex: number,
+  inequalities: readonly FutoshikiInequality[],
+): number[] {
   const candidates: number[] = []
 
   for (let value = 1; value <= boardSize; value += 1) {
     const candidateGrid = cloneGrid(grid)
     candidateGrid[rowIndex][columnIndex] = value
 
-    if (isGridValid(candidateGrid)) candidates.push(value)
+    if (isGridValid(candidateGrid, inequalities)) candidates.push(value)
   }
 
   return candidates
@@ -80,7 +111,7 @@ function isSolution(grid: FutoshikiGrid): grid is FutoshikiSolution {
   return grid.flat().every((value): value is number => value !== null)
 }
 
-function findSolution(grid: FutoshikiGrid): FutoshikiSolution | null {
+function findSolution(grid: FutoshikiGrid, inequalities: readonly FutoshikiInequality[]): FutoshikiSolution | null {
   let bestPosition: FutoshikiPosition | null = null
   let bestCandidates: number[] = []
 
@@ -88,7 +119,7 @@ function findSolution(grid: FutoshikiGrid): FutoshikiSolution | null {
     for (let columnIndex = 0; columnIndex < boardSize; columnIndex += 1) {
       if (grid[rowIndex][columnIndex] !== null) continue
 
-      const candidates = getCandidates(grid, rowIndex, columnIndex)
+      const candidates = getCandidates(grid, rowIndex, columnIndex, inequalities)
 
       if (candidates.length === 0) return null
 
@@ -104,7 +135,7 @@ function findSolution(grid: FutoshikiGrid): FutoshikiSolution | null {
   for (const value of bestCandidates) {
     const candidateGrid = cloneGrid(grid)
     candidateGrid[bestPosition.rowIndex][bestPosition.columnIndex] = value
-    const solution = findSolution(candidateGrid)
+    const solution = findSolution(candidateGrid, inequalities)
 
     if (solution) return solution
   }
@@ -115,7 +146,7 @@ function findSolution(grid: FutoshikiGrid): FutoshikiSolution | null {
 export const useFutoshikiStore = defineStore('futoshiki', {
   state: () => ({
     board: createInitialBoard(),
-    inequalities,
+    inequalities: baseInequalities,
     isAutoSolving: false,
     logs: [] as SolverLog[],
     nextLogId: 1,
@@ -142,10 +173,22 @@ export const useFutoshikiStore = defineStore('futoshiki', {
       this.solverMode = 'ready'
       this.addLog('Puzzle reset. The solver is ready.')
     },
+    loadRandomExample() {
+      autoRunController.cancel()
+      this.board = createInitialBoard()
+      this.inequalities = createRandomInequalities(createRandomSolution())
+      this.isAutoSolving = false
+      this.logs = []
+      this.nextLogId = 1
+      this.recentlyUpdatedCells = []
+      this.solution = null
+      this.solverMode = 'ready'
+      this.addLog('Random valid Futoshiki example generated.')
+    },
     startSolver() {
       if (this.solverMode !== 'ready') return
 
-      const solution = findSolution(this.board)
+      const solution = findSolution(this.board, this.inequalities)
 
       if (solution === null) {
         this.solverMode = 'stuck'

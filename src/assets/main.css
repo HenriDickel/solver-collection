@@ -193,10 +193,6 @@
     @apply font-bold text-accent underline decoration-accent/35 underline-offset-2 transition hover:text-ink focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
   }
 
-  .legal-notice {
-    @apply mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900;
-  }
-
   .collection-hero {
     @apply relative grid w-full overflow-hidden rounded-[2rem] border border-white/80 bg-surface px-6 py-10 shadow-card sm:px-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center lg:gap-12;
     background-image: linear-gradient(135deg, rgb(255 255 255 / 0.96), rgb(238 239 255 / 0.82));
@@ -695,18 +691,6 @@
 
   .cell {
     @apply relative flex aspect-square min-h-0 min-w-0 items-stretch justify-center border-0 bg-surface p-0 text-center font-bold text-ink transition-colors;
-  }
-
-  .cell:hover {
-    @apply bg-accent-soft;
-  }
-
-  .cell:focus-within {
-    @apply relative z-10 bg-accent-soft ring-2 ring-inset ring-accent;
-  }
-
-  .cell-input {
-    @apply size-full min-w-0 border-0 bg-transparent p-0 text-center text-lg font-bold text-ink outline-none sm:text-xl;
   }
 
   .cell-value {

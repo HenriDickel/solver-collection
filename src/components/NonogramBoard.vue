@@ -8,7 +8,7 @@
     :title="title"
     @advance="nonogramStore.advanceSolver()"
     @auto-solve="nonogramStore.autoSolve()"
-    @reset="nonogramStore.resetBoard()"
+    @random="nonogramStore.loadRandomExample()"
   >
     <div class="nonogram-workspace" :aria-label="`${title} board with row and column clues`">
       <div class="nonogram-corner" aria-hidden="true"></div>

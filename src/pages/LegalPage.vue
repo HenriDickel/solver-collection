@@ -2,11 +2,11 @@
   <main class="page-shell legal-page">
     <article class="legal-card">
       <RouterLink class="legal-back-link" to="/">
-        <span aria-hidden="true">←</span>
-        Alle Spiele
+        <span aria-hidden="true">&larr;</span>
+        All games
       </RouterLink>
 
-      <p class="eyebrow">Rechtliches</p>
+      <p class="eyebrow">Legal</p>
       <h1>{{ content.title }}</h1>
       <p class="legal-lede">{{ content.intro }}</p>
 
@@ -20,7 +20,6 @@
           <p v-if="section.link">
             <a :href="section.link.href" target="_blank" rel="noreferrer">{{ section.link.label }}</a>
           </p>
-          <p v-if="section.notice" class="legal-notice">{{ section.notice }}</p>
         </section>
       </div>
     </article>
@@ -43,7 +42,6 @@ interface LegalSection {
   paragraphs: string[]
   items?: string[]
   link?: LegalLink
-  notice?: string
 }
 
 interface LegalContent {
@@ -54,22 +52,24 @@ interface LegalContent {
 
 const props = defineProps<{ page: LegalPageKind }>()
 
+const githubProfile = {
+  href: 'https://github.com/HenriDickel/',
+  label: 'Contact via GitHub',
+}
+
 const content = computed<LegalContent>(() => {
   if (props.page === 'imprint') {
     return {
-      title: 'Impressum',
-      intro: 'Angaben zum Anbieter dieser Website.',
+      title: 'Legal Notice',
+      intro: 'Information about the operator of this website.',
       sections: [
         {
-          title: 'Angaben gemäß § 5 DDG',
+          title: 'Operator',
           paragraphs: [
             'Henri Dickel',
-            'Solver Collection ist ein nicht-kommerzielles Hobbyprojekt.',
+            'Solver Collection is a non-commercial hobby project.',
           ],
-          link: {
-            href: 'https://github.com/HenriDickel/',
-            label: 'Kontakt über GitHub',
-          },
+          link: githubProfile,
         },
       ],
     }
@@ -77,29 +77,29 @@ const content = computed<LegalContent>(() => {
 
   if (props.page === 'accessibility') {
     return {
-      title: 'Barrierefreiheit',
-      intro: 'Solver Collection soll für möglichst viele Menschen gut nutzbar sein.',
+      title: 'Accessibility',
+      intro: 'Solver Collection aims to be usable by as many people as possible.',
       sections: [
         {
-          title: 'Unser Anspruch',
+          title: 'Our approach',
           paragraphs: [
-            'Die Oberfläche verwendet klare Kontraste, semantische Bedienelemente und sichtbare Tastaturfokusse. Animationen werden bei aktivierter System-Einstellung für reduzierte Bewegung stark verkürzt.',
+            'The interface uses clear contrast, semantic controls, and visible keyboard focus. Animations are greatly reduced when the operating system requests reduced motion.',
           ],
         },
         {
-          title: 'Bekannte Grenzen',
+          title: 'Known limitations',
           paragraphs: [
-            'Die interaktiven Spielfelder werden fortlaufend auf eine bessere Bedienung mit Tastatur und assistiven Technologien geprüft.',
+            'The interactive boards are continuously reviewed to improve keyboard and assistive-technology support.',
           ],
         },
         {
           title: 'Feedback',
           paragraphs: [
-            'Wenn du auf eine Barriere stößt, melde sie bitte über das GitHub-Profil.',
+            'If you encounter a barrier, please report it through the GitHub profile.',
           ],
           link: {
-            href: 'https://github.com/HenriDickel/',
-            label: 'Feedback über GitHub',
+            ...githubProfile,
+            label: 'Send accessibility feedback via GitHub',
           },
         },
       ],
@@ -107,40 +107,37 @@ const content = computed<LegalContent>(() => {
   }
 
   return {
-    title: 'Datenschutzerklärung',
-    intro: 'Hier erfährst du, welche Daten beim Besuch von Solver Collection verarbeitet werden.',
+    title: 'Privacy Policy',
+    intro: 'This page explains what data is processed when you visit Solver Collection.',
     sections: [
       {
-        title: 'Verantwortliche Stelle',
+        title: 'Controller',
         paragraphs: [
-          'Henri Dickel ist für diese Website verantwortlich.',
+          'Henri Dickel is responsible for this website.',
         ],
-        link: {
-          href: 'https://github.com/HenriDickel/',
-          label: 'Kontakt über GitHub',
-        },
+        link: githubProfile,
       },
       {
-        title: 'Verarbeitung in der Anwendung',
+        title: 'Processing in the application',
         paragraphs: [
-          'Solver Collection ist ein statisches Frontend. Die Anwendung bietet keine Registrierung, kein Kontaktformular sowie keine eingebundenen Analyse- oder Werbedienste.',
-          'Eingaben in den Spielbrettern werden nur für die aktuelle Nutzung im Browser verarbeitet. Nach dem derzeitigen Stand des Projekts werden sie nicht an einen eigenen Server übertragen.',
+          'Solver Collection is a static frontend. It has no registration, contact form, analytics, or advertising services.',
+          'Puzzle input is processed only in your browser for the current visit. The application does not transmit it to its own server.',
         ],
       },
       {
-        title: 'Hosting über GitHub Pages',
+        title: 'Hosting with GitHub Pages',
         paragraphs: [
-          'Die Website wird über GitHub Pages bereitgestellt. Beim Aufruf protokolliert GitHub nach eigenen Angaben die IP-Adresse von Besuchenden aus Sicherheitsgründen.',
+          'This website is hosted through GitHub Pages. GitHub states that it logs visitors’ IP addresses for security purposes when a Pages site is visited.',
         ],
         link: {
           href: 'https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages',
-          label: 'Informationen von GitHub Pages zum Hosting und zur Protokollierung',
+          label: 'GitHub Pages hosting and logging information',
         },
       },
       {
-        title: 'Weitere Informationen',
+        title: 'More information',
         paragraphs: [
-          'Informationen zur Datenverarbeitung durch GitHub findest du in der Datenschutzerklärung von GitHub.',
+          'Further information about GitHub’s data processing is available in its privacy statement.',
         ],
         link: {
           href: 'https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement',

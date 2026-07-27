@@ -3,11 +3,11 @@ import type {
   SolverStep,
   SudokuCandidate,
   SudokuCandidateGrid,
-  SudokuCellValue,
   SudokuGrid,
 } from '../types/sudoku'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
 import { getGridCellKey } from '../utils/grid'
+import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -15,23 +15,40 @@ const autoStepDelay = 300
 const maxAutoSteps = 100
 
 const autoRunController = createSolverRunController()
+const basePuzzle: SudokuGrid = [
+  [5, 3, null, null, 7, null, null, null, null],
+  [6, null, null, 1, 9, 5, null, null, null],
+  [null, 9, 8, null, null, null, null, 6, null],
+  [8, null, null, null, 6, null, null, null, 3],
+  [4, null, null, 8, null, 3, null, null, 1],
+  [7, null, null, null, 2, null, null, null, 6],
+  [null, 6, null, null, null, null, 2, 8, null],
+  [null, null, null, 4, 1, 9, null, null, 5],
+  [null, null, null, null, 8, null, null, 7, 9],
+]
 
 function createInitialBoard(): SudokuGrid {
-  return [
-    [5, 3, null, null, 7, null, null, null, null],
-    [6, null, null, 1, 9, 5, null, null, null],
-    [null, 9, 8, null, null, null, null, 6, null],
-    [8, null, null, null, 6, null, null, null, 3],
-    [4, null, null, 8, null, 3, null, null, 1],
-    [7, null, null, null, 2, null, null, null, 6],
-    [null, 6, null, null, null, null, 2, 8, null],
-    [null, null, null, 4, 1, 9, null, null, 5],
-    [null, null, null, null, 8, null, null, 7, 9],
-  ]
+  return basePuzzle.map((row) => [...row])
 }
 
-function createEmptyBoard(): SudokuGrid {
-  return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => null))
+function createBandPreservingPermutation(): number[] {
+  return shuffle([0, 1, 2]).flatMap((groupIndex) =>
+    shuffle([0, 1, 2]).map((offset) => groupIndex * 3 + offset),
+  )
+}
+
+function createRandomBoard(): SudokuGrid {
+  const rowIndexes = createBandPreservingPermutation()
+  const columnIndexes = createBandPreservingPermutation()
+  const shuffledDigits = shuffle(digits)
+  const digitMap = new Map(digits.map((digit, index) => [digit, shuffledDigits[index]]))
+
+  return rowIndexes.map((rowIndex) =>
+    columnIndexes.map((columnIndex) => {
+      const value = basePuzzle[rowIndex][columnIndex]
+      return value === null ? null : digitMap.get(value) ?? value
+    }),
+  )
 }
 
 function createEmptyCandidateGrid(): SudokuCandidateGrid {
@@ -54,23 +71,17 @@ export const useSudokuStore = defineStore('sudoku', {
     filledCells: (state) => state.board.flat().filter((value) => value !== null).length,
   },
   actions: {
-    setCell(rowIndex: number, columnIndex: number, value: SudokuCellValue) {
-      if (this.solverMode === 'ready') {
-        this.board[rowIndex][columnIndex] = value
-        this.recentlyPlacedCells = []
-      }
-    },
-    clearBoard() {
+    loadRandomExample() {
       autoRunController.cancel()
-      this.isAutoSolving = false
-      this.board = createEmptyBoard()
+      this.board = createRandomBoard()
       this.candidates = createEmptyCandidateGrid()
+      this.isAutoSolving = false
       this.logs = []
       this.nextLogId = 1
       this.nextStep = 'checkCandidates'
       this.recentlyPlacedCells = []
       this.solverMode = 'ready'
-      this.addLog('Board cleared. Input mode is ready.')
+      this.addLog('Random valid Sudoku example loaded.')
     },
     addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })

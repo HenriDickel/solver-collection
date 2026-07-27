@@ -16,7 +16,14 @@
       <slot></slot>
 
       <div class="solver-controls" :aria-busy="isAutoSolving">
-        <button class="clear-button" type="button" @click="emit('reset')">Reset</button>
+        <button
+          class="clear-button"
+          type="button"
+          title="Load a random example"
+          @click="emit('random')"
+        >
+          Random example
+        </button>
         <template v-if="canAdvance">
           <button class="solver-button" type="button" :disabled="isAutoSolving" @click="emit('advance')">
             {{ advanceLabel }}
@@ -52,7 +59,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   advance: []
   autoSolve: []
-  reset: []
+  random: []
 }>()
 
 const canAdvance = computed(() => props.mode === 'ready' || props.mode === 'solving')

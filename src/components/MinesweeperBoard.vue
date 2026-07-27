@@ -8,7 +8,7 @@
     :title="title"
     @advance="minesweeperStore.advanceSolver()"
     @auto-solve="minesweeperStore.autoSolve()"
-    @reset="minesweeperStore.resetBoard()"
+    @random="minesweeperStore.loadRandomExample()"
   >
     <div class="mine-board" role="grid" :aria-label="`${title} board`">
       <template v-for="(row, rowIndex) in board" :key="rowIndex">

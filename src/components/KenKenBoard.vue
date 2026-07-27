@@ -8,7 +8,7 @@
     :title="title"
     @advance="kenKenStore.advanceSolver()"
     @auto-solve="kenKenStore.autoSolve()"
-    @reset="kenKenStore.resetBoard()"
+    @random="kenKenStore.loadRandomExample()"
   >
     <div class="kenken-board" role="grid" :aria-label="`${title} board`">
       <svg class="kenken-cage-lines" viewBox="0 0 4 4" preserveAspectRatio="none" aria-hidden="true">

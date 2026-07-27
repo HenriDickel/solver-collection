@@ -10,20 +10,27 @@ import type {
 } from '../types/kenken'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
 import { getGridCellKey } from '../utils/grid'
+import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
 const boardSize = 4
 const autoStepDelay = 220
 const maxAutoSteps = 30
-const cages: KenKenCage[] = [
-  { cells: [{ rowIndex: 0, columnIndex: 0 }, { rowIndex: 0, columnIndex: 1 }], id: 'a', operator: '+', target: 3 },
-  { cells: [{ rowIndex: 0, columnIndex: 2 }, { rowIndex: 0, columnIndex: 3 }], id: 'b', operator: '*', target: 12 },
-  { cells: [{ rowIndex: 1, columnIndex: 0 }, { rowIndex: 2, columnIndex: 0 }], id: 'c', operator: '*', target: 6 },
-  { cells: [{ rowIndex: 1, columnIndex: 1 }, { rowIndex: 1, columnIndex: 2 }], id: 'd', operator: '*', target: 12 },
-  { cells: [{ rowIndex: 1, columnIndex: 3 }, { rowIndex: 2, columnIndex: 3 }], id: 'e', operator: '/', target: 2 },
-  { cells: [{ rowIndex: 2, columnIndex: 1 }, { rowIndex: 2, columnIndex: 2 }], id: 'f', operator: '*', target: 4 },
-  { cells: [{ rowIndex: 3, columnIndex: 0 }, { rowIndex: 3, columnIndex: 1 }], id: 'g', operator: '*', target: 4 },
-  { cells: [{ rowIndex: 3, columnIndex: 2 }, { rowIndex: 3, columnIndex: 3 }], id: 'h', operator: '+', target: 5 },
+const baseSolution: KenKenSolution = [
+  [1, 2, 3, 4],
+  [2, 3, 4, 1],
+  [3, 4, 1, 2],
+  [4, 1, 2, 3],
+]
+const cageTemplates: Array<Omit<KenKenCage, 'target'>> = [
+  { cells: [{ rowIndex: 0, columnIndex: 0 }, { rowIndex: 0, columnIndex: 1 }], id: 'a', operator: '+' },
+  { cells: [{ rowIndex: 0, columnIndex: 2 }, { rowIndex: 0, columnIndex: 3 }], id: 'b', operator: '*' },
+  { cells: [{ rowIndex: 1, columnIndex: 0 }, { rowIndex: 2, columnIndex: 0 }], id: 'c', operator: '*' },
+  { cells: [{ rowIndex: 1, columnIndex: 1 }, { rowIndex: 1, columnIndex: 2 }], id: 'd', operator: '*' },
+  { cells: [{ rowIndex: 1, columnIndex: 3 }, { rowIndex: 2, columnIndex: 3 }], id: 'e', operator: '/' },
+  { cells: [{ rowIndex: 2, columnIndex: 1 }, { rowIndex: 2, columnIndex: 2 }], id: 'f', operator: '*' },
+  { cells: [{ rowIndex: 3, columnIndex: 0 }, { rowIndex: 3, columnIndex: 1 }], id: 'g', operator: '*' },
+  { cells: [{ rowIndex: 3, columnIndex: 2 }, { rowIndex: 3, columnIndex: 3 }], id: 'h', operator: '+' },
 ]
 
 const autoRunController = createSolverRunController()
@@ -34,7 +41,27 @@ function getOperatorSymbol(operator: KenKenOperator): string {
   return operator
 }
 
-function getCage(rowIndex: number, columnIndex: number): KenKenCage {
+function formatDivisionTarget(target: number): string {
+  for (let denominator = 2; denominator <= boardSize; denominator += 1) {
+    const numerator = target * denominator
+
+    if (Number.isInteger(numerator) && numerator <= boardSize) {
+      return `${numerator} / ${denominator}`
+    }
+  }
+
+  return String(target)
+}
+
+function getCageLabel(cage: KenKenCage): string {
+  if (cage.operator === '/' && !Number.isInteger(cage.target)) {
+    return formatDivisionTarget(cage.target)
+  }
+
+  return `${cage.target}${getOperatorSymbol(cage.operator)}`
+}
+
+function getCage(rowIndex: number, columnIndex: number, cages: readonly KenKenCage[]): KenKenCage {
   const cage = cages.find((candidate) => candidate.cells.some(
     (cell) => cell.rowIndex === rowIndex && cell.columnIndex === columnIndex,
   ))
@@ -44,18 +71,47 @@ function getCage(rowIndex: number, columnIndex: number): KenKenCage {
   return cage
 }
 
-function createInitialBoard(): KenKenBoard {
+function createBoard(cages: readonly KenKenCage[]): KenKenBoard {
   return Array.from({ length: boardSize }, (_, rowIndex) =>
     Array.from({ length: boardSize }, (_, columnIndex) => {
-      const cage = getCage(rowIndex, columnIndex)
+      const cage = getCage(rowIndex, columnIndex, cages)
       const isLabelCell = cage.cells[0].rowIndex === rowIndex && cage.cells[0].columnIndex === columnIndex
 
       return {
         cageId: cage.id,
-        label: isLabelCell ? `${cage.target}${getOperatorSymbol(cage.operator)}` : null,
+        label: isLabelCell ? getCageLabel(cage) : null,
         value: null,
       }
     }),
+  )
+}
+
+function getCageTarget(cage: Omit<KenKenCage, 'target'>, solution: KenKenSolution): number {
+  const values = cage.cells.map((cell) => solution[cell.rowIndex][cell.columnIndex])
+
+  if (cage.operator === '+') return values.reduce((total, value) => total + value, 0)
+  if (cage.operator === '-') return Math.abs(values[0] - values[1])
+  if (cage.operator === '*') return values.reduce((total, value) => total * value, 1)
+  if (cage.operator === '/') return Math.max(...values) / Math.min(...values)
+  return values[0]
+}
+
+function createCages(solution: KenKenSolution): KenKenCage[] {
+  return cageTemplates.map((cage) => ({
+    ...cage,
+    cells: cage.cells.map((cell) => ({ ...cell })),
+    target: getCageTarget(cage, solution),
+  }))
+}
+
+function createRandomSolution(): KenKenSolution {
+  const rowIndexes = shuffle([0, 1, 2, 3])
+  const columnIndexes = shuffle([0, 1, 2, 3])
+  const shuffledDigits = shuffle([1, 2, 3, 4])
+  const digitMap = new Map([1, 2, 3, 4].map((value, index) => [value, shuffledDigits[index]]))
+
+  return rowIndexes.map((rowIndex) =>
+    columnIndexes.map((columnIndex) => digitMap.get(baseSolution[rowIndex][columnIndex]) ?? 1),
   )
 }
 
@@ -104,7 +160,7 @@ function hasUniqueValues(values: readonly number[]): boolean {
   return new Set(values).size === values.length
 }
 
-function isGridValid(grid: KenKenGrid): boolean {
+function isGridValid(grid: KenKenGrid, cages: readonly KenKenCage[]): boolean {
   for (let index = 0; index < boardSize; index += 1) {
     const rowValues = grid[index].filter((value): value is number => value !== null)
     const columnValues = grid.map((row) => row[index]).filter((value): value is number => value !== null)
@@ -115,14 +171,19 @@ function isGridValid(grid: KenKenGrid): boolean {
   return cages.every((cage) => canCageReachTarget(cage, grid))
 }
 
-function getCandidates(grid: KenKenGrid, rowIndex: number, columnIndex: number): number[] {
+function getCandidates(
+  grid: KenKenGrid,
+  rowIndex: number,
+  columnIndex: number,
+  cages: readonly KenKenCage[],
+): number[] {
   const candidates: number[] = []
 
   for (let value = 1; value <= boardSize; value += 1) {
     const candidateGrid = cloneGrid(grid)
     candidateGrid[rowIndex][columnIndex] = value
 
-    if (isGridValid(candidateGrid)) candidates.push(value)
+    if (isGridValid(candidateGrid, cages)) candidates.push(value)
   }
 
   return candidates
@@ -132,7 +193,7 @@ function isSolution(grid: KenKenGrid): grid is KenKenSolution {
   return grid.flat().every((value): value is number => value !== null)
 }
 
-function findSolution(grid: KenKenGrid): KenKenSolution | null {
+function findSolution(grid: KenKenGrid, cages: readonly KenKenCage[]): KenKenSolution | null {
   let bestPosition: KenKenPosition | null = null
   let bestCandidates: number[] = []
 
@@ -140,7 +201,7 @@ function findSolution(grid: KenKenGrid): KenKenSolution | null {
     for (let columnIndex = 0; columnIndex < boardSize; columnIndex += 1) {
       if (grid[rowIndex][columnIndex] !== null) continue
 
-      const candidates = getCandidates(grid, rowIndex, columnIndex)
+      const candidates = getCandidates(grid, rowIndex, columnIndex, cages)
 
       if (candidates.length === 0) return null
 
@@ -156,7 +217,7 @@ function findSolution(grid: KenKenGrid): KenKenSolution | null {
   for (const value of bestCandidates) {
     const candidateGrid = cloneGrid(grid)
     candidateGrid[bestPosition.rowIndex][bestPosition.columnIndex] = value
-    const solution = findSolution(candidateGrid)
+    const solution = findSolution(candidateGrid, cages)
 
     if (solution) return solution
   }
@@ -165,15 +226,20 @@ function findSolution(grid: KenKenGrid): KenKenSolution | null {
 }
 
 export const useKenKenStore = defineStore('kenken', {
-  state: () => ({
-    board: createInitialBoard(),
-    isAutoSolving: false,
-    logs: [] as SolverLog[],
-    nextLogId: 1,
-    recentlyUpdatedCells: [] as string[],
-    solution: null as KenKenSolution | null,
-    solverMode: 'ready' as SolverMode,
-  }),
+  state: () => {
+    const cages = createCages(baseSolution)
+
+    return {
+      board: createBoard(cages),
+      cages,
+      isAutoSolving: false,
+      logs: [] as SolverLog[],
+      nextLogId: 1,
+      recentlyUpdatedCells: [] as string[],
+      solution: null as KenKenSolution | null,
+      solverMode: 'ready' as SolverMode,
+    }
+  },
   getters: {
     resolvedCells: (state) => state.board.flat().filter((cell) => cell.value !== null).length,
   },
@@ -184,7 +250,7 @@ export const useKenKenStore = defineStore('kenken', {
     },
     resetBoard() {
       autoRunController.cancel()
-      this.board = createInitialBoard()
+      this.board = createBoard(this.cages)
       this.isAutoSolving = false
       this.logs = []
       this.nextLogId = 1
@@ -193,11 +259,23 @@ export const useKenKenStore = defineStore('kenken', {
       this.solverMode = 'ready'
       this.addLog('Puzzle reset. The solver is ready.')
     },
+    loadRandomExample() {
+      autoRunController.cancel()
+      this.cages = createCages(createRandomSolution())
+      this.board = createBoard(this.cages)
+      this.isAutoSolving = false
+      this.logs = []
+      this.nextLogId = 1
+      this.recentlyUpdatedCells = []
+      this.solution = null
+      this.solverMode = 'ready'
+      this.addLog('Random valid KenKen example generated.')
+    },
     startSolver() {
       if (this.solverMode !== 'ready') return
 
       const grid = this.board.map((row) => row.map((cell) => cell.value))
-      const solution = findSolution(grid)
+      const solution = findSolution(grid, this.cages)
 
       if (solution === null) {
         this.solverMode = 'stuck'

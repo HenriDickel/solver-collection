@@ -8,7 +8,7 @@
     :title="title"
     @advance="futoshikiStore.advanceSolver()"
     @auto-solve="futoshikiStore.autoSolve()"
-    @reset="futoshikiStore.resetBoard()"
+    @random="futoshikiStore.loadRandomExample()"
   >
     <div class="futoshiki-board" role="grid" :aria-label="`${title} board`">
       <template v-for="(row, rowIndex) in board" :key="rowIndex">
