@@ -27,7 +27,7 @@ const cageTemplates: Array<Omit<KenKenCage, 'target'>> = [
   { cells: [{ rowIndex: 0, columnIndex: 2 }, { rowIndex: 0, columnIndex: 3 }], id: 'b', operator: '*' },
   { cells: [{ rowIndex: 1, columnIndex: 0 }, { rowIndex: 2, columnIndex: 0 }], id: 'c', operator: '*' },
   { cells: [{ rowIndex: 1, columnIndex: 1 }, { rowIndex: 1, columnIndex: 2 }], id: 'd', operator: '*' },
-  { cells: [{ rowIndex: 1, columnIndex: 3 }, { rowIndex: 2, columnIndex: 3 }], id: 'e', operator: '/' },
+  { cells: [{ rowIndex: 1, columnIndex: 3 }, { rowIndex: 2, columnIndex: 3 }], id: 'e', operator: '-' },
   { cells: [{ rowIndex: 2, columnIndex: 1 }, { rowIndex: 2, columnIndex: 2 }], id: 'f', operator: '*' },
   { cells: [{ rowIndex: 3, columnIndex: 0 }, { rowIndex: 3, columnIndex: 1 }], id: 'g', operator: '*' },
   { cells: [{ rowIndex: 3, columnIndex: 2 }, { rowIndex: 3, columnIndex: 3 }], id: 'h', operator: '+' },
@@ -37,27 +37,10 @@ const autoRunController = createSolverRunController()
 
 function getOperatorSymbol(operator: KenKenOperator): string {
   if (operator === '*') return '×'
-  if (operator === '/') return '÷'
   return operator
 }
 
-function formatDivisionTarget(target: number): string {
-  for (let denominator = 2; denominator <= boardSize; denominator += 1) {
-    const numerator = target * denominator
-
-    if (Number.isInteger(numerator) && numerator <= boardSize) {
-      return `${numerator} / ${denominator}`
-    }
-  }
-
-  return String(target)
-}
-
 function getCageLabel(cage: KenKenCage): string {
-  if (cage.operator === '/' && !Number.isInteger(cage.target)) {
-    return formatDivisionTarget(cage.target)
-  }
-
   return `${cage.target}${getOperatorSymbol(cage.operator)}`
 }
 
@@ -92,16 +75,15 @@ function getCageTarget(cage: Omit<KenKenCage, 'target'>, solution: KenKenSolutio
   if (cage.operator === '+') return values.reduce((total, value) => total + value, 0)
   if (cage.operator === '-') return Math.abs(values[0] - values[1])
   if (cage.operator === '*') return values.reduce((total, value) => total * value, 1)
-  if (cage.operator === '/') return Math.max(...values) / Math.min(...values)
   return values[0]
 }
 
 function createCages(solution: KenKenSolution): KenKenCage[] {
   return cageTemplates.map((cage) => ({
-    ...cage,
-    cells: cage.cells.map((cell) => ({ ...cell })),
-    target: getCageTarget(cage, solution),
-  }))
+      ...cage,
+      cells: cage.cells.map((cell) => ({ ...cell })),
+      target: getCageTarget(cage, solution),
+    }))
 }
 
 function createRandomSolution(): KenKenSolution {
@@ -127,7 +109,6 @@ function isCageComplete(cage: KenKenCage, values: readonly number[]): boolean {
   if (cage.operator === '+') return values.reduce((total, value) => total + value, 0) === cage.target
   if (cage.operator === '-') return Math.abs(values[0] - values[1]) === cage.target
   if (cage.operator === '*') return values.reduce((total, value) => total * value, 1) === cage.target
-  if (cage.operator === '/') return Math.max(...values) / Math.min(...values) === cage.target
   return values[0] === cage.target
 }
 
@@ -225,6 +206,16 @@ function findSolution(grid: KenKenGrid, cages: readonly KenKenCage[]): KenKenSol
   return null
 }
 
+function createRandomSolvableCages(): KenKenCage[] {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const cages = createCages(createRandomSolution())
+
+    if (findSolution(createEmptyGrid(), cages) !== null) return cages
+  }
+
+  return createCages(baseSolution)
+}
+
 export const useKenKenStore = defineStore('kenken', {
   state: () => {
     const cages = createCages(baseSolution)
@@ -261,7 +252,7 @@ export const useKenKenStore = defineStore('kenken', {
     },
     loadRandomExample() {
       autoRunController.cancel()
-      this.cages = createCages(createRandomSolution())
+      this.cages = createRandomSolvableCages()
       this.board = createBoard(this.cages)
       this.isAutoSolving = false
       this.logs = []

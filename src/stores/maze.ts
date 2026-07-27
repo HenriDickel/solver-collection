@@ -86,6 +86,51 @@ function createRandomMazeLayout(): string[] {
   return grid.map((row) => row.join(''))
 }
 
+function hasRouteToGoal(layout: readonly string[]): boolean {
+  const startRowIndex = layout.findIndex((row) => row.includes('S'))
+  const startColumnIndex = layout[startRowIndex]?.indexOf('S') ?? -1
+  const goalRowIndex = layout.findIndex((row) => row.includes('E'))
+  const goalColumnIndex = layout[goalRowIndex]?.indexOf('E') ?? -1
+
+  if (startRowIndex < 0 || startColumnIndex < 0 || goalRowIndex < 0 || goalColumnIndex < 0) return false
+
+  const pendingCells: Array<[number, number]> = [[startRowIndex, startColumnIndex]]
+  const visitedCells = new Set([getGridCellKey(startRowIndex, startColumnIndex)])
+
+  while (pendingCells.length > 0) {
+    const [rowIndex, columnIndex] = pendingCells.shift() as [number, number]
+
+    if (rowIndex === goalRowIndex && columnIndex === goalColumnIndex) return true
+
+    for (const [rowOffset, columnOffset] of [[-1, 0], [0, 1], [1, 0], [0, -1]]) {
+      const nextRowIndex = rowIndex + rowOffset
+      const nextColumnIndex = columnIndex + columnOffset
+      const cellKey = getGridCellKey(nextRowIndex, nextColumnIndex)
+      const isInsideMaze = nextRowIndex >= 0
+        && nextRowIndex < layout.length
+        && nextColumnIndex >= 0
+        && nextColumnIndex < layout[0].length
+
+      if (!isInsideMaze || visitedCells.has(cellKey) || layout[nextRowIndex][nextColumnIndex] === '#') continue
+
+      visitedCells.add(cellKey)
+      pendingCells.push([nextRowIndex, nextColumnIndex])
+    }
+  }
+
+  return false
+}
+
+function createRandomSolvableMazeLayout(): string[] {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const layout = createRandomMazeLayout()
+
+    if (hasRouteToGoal(layout)) return layout
+  }
+
+  return mazeLayout
+}
+
 export const useMazeStore = defineStore('maze', {
   state: () => ({
     board: createInitialBoard(),
@@ -143,7 +188,7 @@ export const useMazeStore = defineStore('maze', {
     },
     loadRandomExample() {
       autoRunController.cancel()
-      this.board = createBoardFromLayout(createRandomMazeLayout())
+      this.board = createBoardFromLayout(createRandomSolvableMazeLayout())
       this.isAutoSolving = false
       this.logs = []
       this.nextLogId = 1

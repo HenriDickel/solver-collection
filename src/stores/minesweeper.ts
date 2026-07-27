@@ -70,47 +70,119 @@ function createInitialBoard(): MinesweeperBoard {
   return createBoard(mineLocations, initiallyHiddenSafeCells)
 }
 
-function revealSafeArea(board: MinesweeperBoard, rowIndex: number, columnIndex: number): void {
-  const pendingCells: Array<[number, number]> = [[rowIndex, columnIndex]]
-  const visitedCells = new Set<string>()
+function cloneBoard(board: MinesweeperBoard): MinesweeperBoard {
+  return board.map((row) => row.map((cell) => ({ ...cell })))
+}
 
-  while (pendingCells.length > 0) {
-    const [currentRowIndex, currentColumnIndex] = pendingCells.pop() as [number, number]
-    const cellKey = getGridCellKey(currentRowIndex, currentColumnIndex)
+function applyCertainMoves(board: MinesweeperBoard): boolean {
+  const safeCells = new Set<string>()
+  const mineCells = new Set<string>()
 
-    if (visitedCells.has(cellKey)) continue
+  for (let rowIndex = 0; rowIndex < boardSize; rowIndex += 1) {
+    for (let columnIndex = 0; columnIndex < boardSize; columnIndex += 1) {
+      const cell = board[rowIndex][columnIndex]
 
-    visitedCells.add(cellKey)
-    const cell = board[currentRowIndex][currentColumnIndex]
-    cell.state = 'revealed'
+      if (cell.state !== 'revealed' || cell.clue === null || cell.clue === 0) continue
 
-    if (cell.clue !== 0) continue
+      const neighbors = getNeighbors(rowIndex, columnIndex)
+      const hiddenNeighbors = neighbors.filter(([row, column]) => board[row][column].state === 'hidden')
+      const flaggedNeighbors = neighbors.filter(([row, column]) => board[row][column].state === 'flagged')
+      const remainingMines = cell.clue - flaggedNeighbors.length
 
-    for (const [neighborRowIndex, neighborColumnIndex] of getNeighbors(currentRowIndex, currentColumnIndex)) {
-      if (board[neighborRowIndex][neighborColumnIndex].clue !== null) {
-        pendingCells.push([neighborRowIndex, neighborColumnIndex])
+      if (hiddenNeighbors.length === 0) continue
+
+      if (remainingMines === 0) {
+        for (const [row, column] of hiddenNeighbors) {
+          safeCells.add(getGridCellKey(row, column))
+        }
+      } else if (remainingMines === hiddenNeighbors.length) {
+        for (const [row, column] of hiddenNeighbors) {
+          mineCells.add(getGridCellKey(row, column))
+        }
       }
     }
   }
+
+  let updatedCells = 0
+
+  for (const cellKey of mineCells) {
+    safeCells.delete(cellKey)
+    const [rowIndex, columnIndex] = cellKey.split('-').map(Number)
+    const cell = board[rowIndex][columnIndex]
+
+    if (cell.state === 'hidden') {
+      cell.state = 'flagged'
+      updatedCells += 1
+    }
+  }
+
+  for (const cellKey of safeCells) {
+    const [rowIndex, columnIndex] = cellKey.split('-').map(Number)
+    const cell = board[rowIndex][columnIndex]
+
+    if (cell.state === 'hidden') {
+      cell.state = 'revealed'
+      updatedCells += 1
+    }
+  }
+
+  return updatedCells > 0
 }
 
-function createRandomBoard(): MinesweeperBoard {
-  const startRowIndex = Math.floor(boardSize / 2)
-  const startColumnIndex = Math.floor(boardSize / 2)
-  const protectedCells = new Set([
-    getGridCellKey(startRowIndex, startColumnIndex),
-    ...getNeighbors(startRowIndex, startColumnIndex).map(([rowIndex, columnIndex]) => getGridCellKey(rowIndex, columnIndex)),
-  ])
-  const availableCells = Array.from({ length: boardSize * boardSize }, (_, index) => {
-    const rowIndex = Math.floor(index / boardSize)
-    const columnIndex = index % boardSize
-    return getGridCellKey(rowIndex, columnIndex)
-  }).filter((cellKey) => !protectedCells.has(cellKey))
-  const randomMines = new Set(shuffle(availableCells).slice(0, mineLocations.size))
-  const board = createBoard(randomMines, new Set(availableCells))
+function getSolvingStepCount(board: MinesweeperBoard): number | null {
+  const candidateBoard = cloneBoard(board)
 
-  revealSafeArea(board, startRowIndex, startColumnIndex)
-  return board
+  for (let step = 0; step < maxAutoSteps; step += 1) {
+    if (candidateBoard.flat().every((cell) => cell.state !== 'hidden')) return step
+    if (!applyCertainMoves(candidateBoard)) return null
+  }
+
+  return candidateBoard.flat().every((cell) => cell.state !== 'hidden') ? maxAutoSteps : null
+}
+
+function createGuaranteedSolvableBoard(): MinesweeperBoard {
+  const candidateMineCells: string[] = []
+
+  for (let rowIndex = 0; rowIndex < boardSize; rowIndex += 2) {
+    for (let columnIndex = 0; columnIndex < boardSize; columnIndex += 2) {
+      candidateMineCells.push(getGridCellKey(rowIndex, columnIndex))
+    }
+  }
+
+  return createBoard(new Set(shuffle(candidateMineCells).slice(0, mineLocations.size)), new Set())
+}
+
+function createRandomSolvableBoard(): MinesweeperBoard {
+  let bestBoard = createGuaranteedSolvableBoard()
+  let bestScore = -1
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    let board = createGuaranteedSolvableBoard()
+    const safeCells = board.flatMap((row, rowIndex) => row.flatMap((cell, columnIndex) => (
+      cell.clue === null ? [] : [getGridCellKey(rowIndex, columnIndex)]
+    )))
+
+    for (const cellKey of shuffle(safeCells)) {
+      const [rowIndex, columnIndex] = cellKey.split('-').map(Number)
+      const candidateBoard = cloneBoard(board)
+      candidateBoard[rowIndex][columnIndex].state = 'hidden'
+
+      if (getSolvingStepCount(candidateBoard) !== null) {
+        board = candidateBoard
+      }
+    }
+
+    const steps = getSolvingStepCount(board)
+    const hiddenSafeCells = board.flat().filter((cell) => cell.clue !== null && cell.state === 'hidden').length
+    const score = (steps ?? 0) * 1000 + hiddenSafeCells
+
+    if (score > bestScore) {
+      bestBoard = board
+      bestScore = score
+    }
+  }
+
+  return bestBoard
 }
 
 export const useMinesweeperStore = defineStore('minesweeper', {
@@ -143,7 +215,7 @@ export const useMinesweeperStore = defineStore('minesweeper', {
     },
     loadRandomExample() {
       autoRunController.cancel()
-      this.board = createRandomBoard()
+      this.board = createRandomSolvableBoard()
       this.isAutoSolving = false
       this.logs = []
       this.nextLogId = 1

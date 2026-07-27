@@ -184,7 +184,9 @@ function createRandomSolution(): string[] {
     if (isSolvableByDeductions(candidate)) return candidate
   }
 
-  return nonogramSolution
+  if (isSolvableByDeductions(nonogramSolution)) return nonogramSolution
+
+  return Array.from({ length: nonogramSolution.length }, () => '.'.repeat(nonogramSolution[0].length))
 }
 
 function createPuzzle(solution: readonly string[]) {

@@ -1,4 +1,4 @@
-export type KenKenOperator = '+' | '-' | '*' | '/' | '='
+export type KenKenOperator = '+' | '-' | '*' | '='
 
 export interface KenKenPosition {
   columnIndex: number

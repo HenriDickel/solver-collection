@@ -51,6 +51,73 @@ function createRandomBoard(): SudokuGrid {
   )
 }
 
+function getCandidatesForBoard(board: SudokuGrid, rowIndex: number, columnIndex: number): SudokuCandidate {
+  if (board[rowIndex][columnIndex] !== null) return []
+
+  const usedValues = new Set<number>()
+
+  for (const value of board[rowIndex]) {
+    if (value !== null) usedValues.add(value)
+  }
+
+  for (const row of board) {
+    const value = row[columnIndex]
+    if (value !== null) usedValues.add(value)
+  }
+
+  const boxRowStart = Math.floor(rowIndex / 3) * 3
+  const boxColumnStart = Math.floor(columnIndex / 3) * 3
+
+  for (let row = boxRowStart; row < boxRowStart + 3; row += 1) {
+    for (let column = boxColumnStart; column < boxColumnStart + 3; column += 1) {
+      const value = board[row][column]
+      if (value !== null) usedValues.add(value)
+    }
+  }
+
+  return digits.filter((digit) => !usedValues.has(digit))
+}
+
+function isSolvableBySingles(board: SudokuGrid): boolean {
+  const candidateBoard = board.map((row) => [...row])
+
+  for (let step = 0; step < maxAutoSteps; step += 1) {
+    const singleCells: Array<[number, number, number]> = []
+    let emptyCells = 0
+
+    for (let rowIndex = 0; rowIndex < 9; rowIndex += 1) {
+      for (let columnIndex = 0; columnIndex < 9; columnIndex += 1) {
+        if (candidateBoard[rowIndex][columnIndex] !== null) continue
+
+        emptyCells += 1
+        const candidates = getCandidatesForBoard(candidateBoard, rowIndex, columnIndex)
+
+        if (candidates.length === 0) return false
+        if (candidates.length === 1) singleCells.push([rowIndex, columnIndex, candidates[0]])
+      }
+    }
+
+    if (emptyCells === 0) return true
+    if (singleCells.length === 0) return false
+
+    for (const [rowIndex, columnIndex, value] of singleCells) {
+      candidateBoard[rowIndex][columnIndex] = value
+    }
+  }
+
+  return false
+}
+
+function createRandomSolvableBoard(): SudokuGrid {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const board = createRandomBoard()
+
+    if (isSolvableBySingles(board)) return board
+  }
+
+  return createInitialBoard()
+}
+
 function createEmptyCandidateGrid(): SudokuCandidateGrid {
   return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []))
 }
@@ -73,7 +140,7 @@ export const useSudokuStore = defineStore('sudoku', {
   actions: {
     loadRandomExample() {
       autoRunController.cancel()
-      this.board = createRandomBoard()
+      this.board = createRandomSolvableBoard()
       this.candidates = createEmptyCandidateGrid()
       this.isAutoSolving = false
       this.logs = []
@@ -88,32 +155,7 @@ export const useSudokuStore = defineStore('sudoku', {
       this.nextLogId += 1
     },
     getCandidatesForCell(rowIndex: number, columnIndex: number): SudokuCandidate {
-      if (this.board[rowIndex][columnIndex] !== null) {
-        return []
-      }
-
-      const usedValues = new Set<number>()
-
-      for (const value of this.board[rowIndex]) {
-        if (value !== null) usedValues.add(value)
-      }
-
-      for (const row of this.board) {
-        const value = row[columnIndex]
-        if (value !== null) usedValues.add(value)
-      }
-
-      const boxRowStart = Math.floor(rowIndex / 3) * 3
-      const boxColumnStart = Math.floor(columnIndex / 3) * 3
-
-      for (let row = boxRowStart; row < boxRowStart + 3; row += 1) {
-        for (let column = boxColumnStart; column < boxColumnStart + 3; column += 1) {
-          const value = this.board[row][column]
-          if (value !== null) usedValues.add(value)
-        }
-      }
-
-      return digits.filter((digit) => !usedValues.has(digit))
+      return getCandidatesForBoard(this.board, rowIndex, columnIndex)
     },
     analyzeCandidates() {
       const candidateGrid: SudokuCandidateGrid = []

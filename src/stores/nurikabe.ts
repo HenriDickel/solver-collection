@@ -102,6 +102,33 @@ function createTemplateVariant(): NurikabeIsland[] {
   })
 }
 
+function isSolvableByMoves(islands: readonly NurikabeIsland[]): boolean {
+  const board = createBoard(islands)
+
+  for (const move of createMoves(islands)) {
+    for (const position of move.cells) {
+      if (board[position.rowIndex][position.columnIndex].state === 'unknown') {
+        board[position.rowIndex][position.columnIndex].state = move.state
+      }
+    }
+  }
+
+  return board.flat().every((cell) => cell.state !== 'unknown')
+}
+
+function createRandomSolvableVariant(): NurikabeIsland[] {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const islands = createTemplateVariant()
+
+    if (isSolvableByMoves(islands)) return islands
+  }
+
+  return baseIslands.map((island) => ({
+    ...island,
+    cells: island.cells.map((cell) => ({ ...cell })),
+  }))
+}
+
 export const useNurikabeStore = defineStore('nurikabe', {
   state: () => {
     const islands = baseIslands.map((island) => ({
@@ -143,7 +170,7 @@ export const useNurikabeStore = defineStore('nurikabe', {
     },
     loadRandomExample() {
       autoRunController.cancel()
-      this.islands = createTemplateVariant()
+      this.islands = createRandomSolvableVariant()
       this.board = createBoard(this.islands)
       this.isAutoSolving = false
       this.logs = []

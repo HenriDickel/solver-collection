@@ -143,6 +143,16 @@ function findSolution(grid: FutoshikiGrid, inequalities: readonly FutoshikiInequ
   return null
 }
 
+function createRandomSolvableInequalities(): FutoshikiInequality[] {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const inequalities = createRandomInequalities(createRandomSolution())
+
+    if (findSolution(createInitialBoard(), inequalities) !== null) return inequalities
+  }
+
+  return baseInequalities
+}
+
 export const useFutoshikiStore = defineStore('futoshiki', {
   state: () => ({
     board: createInitialBoard(),
@@ -176,7 +186,7 @@ export const useFutoshikiStore = defineStore('futoshiki', {
     loadRandomExample() {
       autoRunController.cancel()
       this.board = createInitialBoard()
-      this.inequalities = createRandomInequalities(createRandomSolution())
+      this.inequalities = createRandomSolvableInequalities()
       this.isAutoSolving = false
       this.logs = []
       this.nextLogId = 1
