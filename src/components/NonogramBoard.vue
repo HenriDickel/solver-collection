@@ -1,6 +1,8 @@
 <template>
   <SolverWorkspace
+    :has-example="hasExample"
     :is-auto-solving="isAutoSolving"
+    :is-example-loading="isExampleLoading"
     :logs="logs"
     :mode="solverMode"
     :progress="`${knownCells} / ${cellCount} resolved`"
@@ -53,7 +55,9 @@ const {
   board,
   cellCount,
   columnClues,
+  hasExample,
   isAutoSolving,
+  isExampleLoading,
   knownCells,
   logs,
   recentlyUpdatedCells,

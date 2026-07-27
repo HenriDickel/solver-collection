@@ -7,6 +7,7 @@ import type {
   NurikabePosition,
 } from '../types/nurikabe'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { ExamplePool } from '../utils/example-pool'
 import { getGridCellKey } from '../utils/grid'
 import { randomInteger } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
@@ -129,25 +130,26 @@ function createRandomSolvableVariant(): NurikabeIsland[] {
   }))
 }
 
-export const useNurikabeStore = defineStore('nurikabe', {
-  state: () => {
-    const islands = baseIslands.map((island) => ({
-      ...island,
-      cells: island.cells.map((cell) => ({ ...cell })),
-    }))
+const nurikabeExamplePool = new ExamplePool<NurikabeIsland[]>(createRandomSolvableVariant)
 
-    return {
-      board: createBoard(islands),
-      isAutoSolving: false,
-      islands,
-      logs: [] as SolverLog[],
-      moveIndex: 0,
-      moves: createMoves(islands),
-      nextLogId: 1,
-      recentlyUpdatedCells: [] as string[],
-      solverMode: 'ready' as SolverMode,
-    }
-  },
+export function preloadNurikabeExamples(): void {
+  nurikabeExamplePool.preload()
+}
+
+export const useNurikabeStore = defineStore('nurikabe', {
+  state: () => ({
+    board: [] as NurikabeBoard,
+    hasExample: false,
+    isAutoSolving: false,
+    isExampleLoading: false,
+    islands: [] as NurikabeIsland[],
+    logs: [] as SolverLog[],
+    moveIndex: 0,
+    moves: [] as NurikabeMove[],
+    nextLogId: 1,
+    recentlyUpdatedCells: [] as string[],
+    solverMode: 'ready' as SolverMode,
+  }),
   getters: {
     resolvedCells: (state) => state.board.flat().filter((cell) => cell.state !== 'unknown').length,
   },
@@ -156,33 +158,29 @@ export const useNurikabeStore = defineStore('nurikabe', {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
-    resetBoard() {
-      autoRunController.cancel()
-      this.board = createBoard(this.islands)
-      this.isAutoSolving = false
-      this.logs = []
-      this.moveIndex = 0
-      this.moves = createMoves(this.islands)
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solverMode = 'ready'
-      this.addLog('Puzzle reset. The solver is ready.')
-    },
     loadRandomExample() {
       autoRunController.cancel()
-      this.islands = createRandomSolvableVariant()
-      this.board = createBoard(this.islands)
       this.isAutoSolving = false
-      this.logs = []
-      this.moveIndex = 0
-      this.moves = createMoves(this.islands)
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solverMode = 'ready'
-      this.addLog('Random Nurikabe template variation loaded.')
+
+      if (this.isExampleLoading) return
+
+      this.isExampleLoading = true
+      nurikabeExamplePool.take((islands) => {
+        this.islands = islands
+        this.board = createBoard(islands)
+        this.hasExample = true
+        this.isExampleLoading = false
+        this.logs = []
+        this.moveIndex = 0
+        this.moves = createMoves(islands)
+        this.nextLogId = 1
+        this.recentlyUpdatedCells = []
+        this.solverMode = 'ready'
+        this.addLog('Random Nurikabe template variation loaded.')
+      })
     },
     startSolver() {
-      if (this.solverMode !== 'ready') return
+      if (!this.hasExample || this.solverMode !== 'ready') return
 
       this.logs = []
       this.nextLogId = 1
@@ -190,7 +188,7 @@ export const useNurikabeStore = defineStore('nurikabe', {
       this.addLog('Solver started. Applying island-size and sea-connectivity rules.', 'success')
     },
     advanceSolver() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck') return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck') return
 
       if (this.solverMode === 'ready') {
         this.startSolver()
@@ -224,7 +222,7 @@ export const useNurikabeStore = defineStore('nurikabe', {
       }
     },
     async autoSolve() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = autoRunController.start()
       this.isAutoSolving = true

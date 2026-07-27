@@ -7,6 +7,7 @@ import type {
   FutoshikiSolution,
 } from '../types/futoshiki'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { ExamplePool } from '../utils/example-pool'
 import { getGridCellKey } from '../utils/grid'
 import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
@@ -153,11 +154,19 @@ function createRandomSolvableInequalities(): FutoshikiInequality[] {
   return baseInequalities
 }
 
+const futoshikiExamplePool = new ExamplePool<FutoshikiInequality[]>(createRandomSolvableInequalities)
+
+export function preloadFutoshikiExamples(): void {
+  futoshikiExamplePool.preload()
+}
+
 export const useFutoshikiStore = defineStore('futoshiki', {
   state: () => ({
-    board: createInitialBoard(),
-    inequalities: baseInequalities,
+    board: [] as FutoshikiGrid,
+    hasExample: false,
+    inequalities: [] as FutoshikiInequality[],
     isAutoSolving: false,
+    isExampleLoading: false,
     logs: [] as SolverLog[],
     nextLogId: 1,
     recentlyUpdatedCells: [] as string[],
@@ -172,31 +181,28 @@ export const useFutoshikiStore = defineStore('futoshiki', {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
-    resetBoard() {
-      autoRunController.cancel()
-      this.board = createInitialBoard()
-      this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solution = null
-      this.solverMode = 'ready'
-      this.addLog('Puzzle reset. The solver is ready.')
-    },
     loadRandomExample() {
       autoRunController.cancel()
-      this.board = createInitialBoard()
-      this.inequalities = createRandomSolvableInequalities()
       this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solution = null
-      this.solverMode = 'ready'
-      this.addLog('Random valid Futoshiki example generated.')
+
+      if (this.isExampleLoading) return
+
+      this.isExampleLoading = true
+      futoshikiExamplePool.take((inequalities) => {
+        this.board = createInitialBoard()
+        this.inequalities = inequalities
+        this.hasExample = true
+        this.isExampleLoading = false
+        this.logs = []
+        this.nextLogId = 1
+        this.recentlyUpdatedCells = []
+        this.solution = null
+        this.solverMode = 'ready'
+        this.addLog('Random valid Futoshiki example generated.')
+      })
     },
     startSolver() {
-      if (this.solverMode !== 'ready') return
+      if (!this.hasExample || this.solverMode !== 'ready') return
 
       const solution = findSolution(this.board, this.inequalities)
 
@@ -213,7 +219,7 @@ export const useFutoshikiStore = defineStore('futoshiki', {
       this.addLog('Constraint search found a valid grid for all inequalities.', 'success')
     },
     advanceSolver() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck') return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck') return
 
       if (this.solverMode === 'ready') {
         this.startSolver()
@@ -242,7 +248,7 @@ export const useFutoshikiStore = defineStore('futoshiki', {
       }
     },
     async autoSolve() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = autoRunController.start()
       this.isAutoSolving = true

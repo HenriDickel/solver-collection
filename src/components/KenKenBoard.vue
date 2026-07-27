@@ -1,6 +1,8 @@
 <template>
   <SolverWorkspace
+    :has-example="hasExample"
     :is-auto-solving="isAutoSolving"
+    :is-example-loading="isExampleLoading"
     :logs="logs"
     :mode="solverMode"
     :progress="`${resolvedCells} / 16 resolved`"
@@ -46,7 +48,7 @@ import { useKenKenStore } from '../stores/kenken'
 const { title } = defineProps<{ title: string }>()
 
 const kenKenStore = useKenKenStore()
-const { board, isAutoSolving, logs, recentlyUpdatedCells, resolvedCells, solverMode } = storeToRefs(kenKenStore)
+const { board, hasExample, isAutoSolving, isExampleLoading, logs, recentlyUpdatedCells, resolvedCells, solverMode } = storeToRefs(kenKenStore)
 
 interface KenKenCageLine {
   key: string

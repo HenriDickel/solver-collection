@@ -13,16 +13,21 @@
         <span class="progress-pill">{{ progress }}</span>
       </div>
 
-      <slot></slot>
+      <slot v-if="hasExample"></slot>
+      <div v-else class="solver-empty-state" role="status">
+        <span class="solver-empty-state__spinner" aria-hidden="true"></span>
+        <p>{{ isExampleLoading ? 'Preparing a fresh example…' : 'A fresh example will be ready shortly.' }}</p>
+      </div>
 
-      <div class="solver-controls" :aria-busy="isAutoSolving">
+      <div class="solver-controls" :aria-busy="isAutoSolving || isExampleLoading">
         <button
           class="clear-button"
           type="button"
-          title="Load a random example"
+          :disabled="isExampleLoading"
+          :title="isExampleLoading ? 'Preparing a new example' : 'Load a random example'"
           @click="emit('random')"
         >
-          Random example
+          {{ isExampleLoading ? 'Preparing example…' : 'Random example' }}
         </button>
         <template v-if="canAdvance">
           <button class="solver-button" type="button" :disabled="isAutoSolving" @click="emit('advance')">
@@ -32,7 +37,7 @@
             {{ isAutoSolving ? 'Auto solving…' : 'Auto solve' }}
           </button>
         </template>
-        <span v-else class="solver-status" :class="`solver-status--${mode}`">
+        <span v-else-if="hasExample && !isExampleLoading" class="solver-status" :class="`solver-status--${mode}`">
           {{ mode === 'solved' ? 'Solved' : stuckLabel }}
         </span>
       </div>
@@ -43,12 +48,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import type { SolverLog, SolverMode } from '../types/solver'
 import SolverTerminal from './SolverTerminal.vue'
 
 const props = defineProps<{
+  hasExample: boolean
   isAutoSolving: boolean
+  isExampleLoading: boolean
   logs: SolverLog[]
   mode: SolverMode
   progress: string
@@ -62,7 +69,15 @@ const emit = defineEmits<{
   random: []
 }>()
 
-const canAdvance = computed(() => props.mode === 'ready' || props.mode === 'solving')
+const canAdvance = computed(() => (
+  props.hasExample
+  && !props.isExampleLoading
+  && (props.mode === 'ready' || props.mode === 'solving')
+))
 const advanceLabel = computed(() => (props.mode === 'ready' ? 'Start solving' : 'Solve next step'))
 const boardTitleId = computed(() => `${props.title.toLowerCase().replaceAll(' ', '-')}-board-title`)
+
+onMounted(() => {
+  if (!props.hasExample) emit('random')
+})
 </script>

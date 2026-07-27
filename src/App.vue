@@ -35,9 +35,27 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { games } from './data/games'
+import { preloadFutoshikiExamples } from './stores/futoshiki'
+import { preloadKenKenExamples } from './stores/kenken'
+import { preloadMazeExamples } from './stores/maze'
+import { preloadMinesweeperExamples } from './stores/minesweeper'
+import { preloadNonogramExamples } from './stores/nonogram'
+import { preloadNurikabeExamples } from './stores/nurikabe'
+import { preloadSudokuExamples } from './stores/sudoku'
 
 const currentYear = new Date().getFullYear()
 const faviconUrl = `${import.meta.env.BASE_URL}favicon.svg`
+
+onMounted(() => {
+  preloadSudokuExamples()
+  preloadMinesweeperExamples()
+  preloadMazeExamples()
+  preloadNonogramExamples()
+  preloadKenKenExamples()
+  preloadFutoshikiExamples()
+  preloadNurikabeExamples()
+})
 </script>

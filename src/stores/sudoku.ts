@@ -7,6 +7,7 @@ import type {
 } from '../types/sudoku'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
 import { getGridCellKey } from '../utils/grid'
+import { ExamplePool } from '../utils/example-pool'
 import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
 
@@ -27,8 +28,8 @@ const basePuzzle: SudokuGrid = [
   [null, null, null, null, 8, null, null, 7, 9],
 ]
 
-function createInitialBoard(): SudokuGrid {
-  return basePuzzle.map((row) => [...row])
+function createEmptyBoard(): SudokuGrid {
+  return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => null))
 }
 
 function createBandPreservingPermutation(): number[] {
@@ -115,18 +116,26 @@ function createRandomSolvableBoard(): SudokuGrid {
     if (isSolvableBySingles(board)) return board
   }
 
-  return createInitialBoard()
+  return createRandomBoard()
 }
 
 function createEmptyCandidateGrid(): SudokuCandidateGrid {
   return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []))
 }
 
+const sudokuExamplePool = new ExamplePool<SudokuGrid>(createRandomSolvableBoard)
+
+export function preloadSudokuExamples(): void {
+  sudokuExamplePool.preload()
+}
+
 export const useSudokuStore = defineStore('sudoku', {
   state: () => ({
-    board: createInitialBoard(),
+    board: createEmptyBoard(),
     candidates: createEmptyCandidateGrid(),
+    hasExample: false,
     isAutoSolving: false,
+    isExampleLoading: false,
     logs: [] as SolverLog[],
     nextLogId: 1,
     nextStep: 'checkCandidates' as SolverStep,
@@ -140,15 +149,23 @@ export const useSudokuStore = defineStore('sudoku', {
   actions: {
     loadRandomExample() {
       autoRunController.cancel()
-      this.board = createRandomSolvableBoard()
-      this.candidates = createEmptyCandidateGrid()
       this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.nextStep = 'checkCandidates'
-      this.recentlyPlacedCells = []
-      this.solverMode = 'ready'
-      this.addLog('Random valid Sudoku example loaded.')
+
+      if (this.isExampleLoading) return
+
+      this.isExampleLoading = true
+      sudokuExamplePool.take((board) => {
+        this.board = board
+        this.candidates = createEmptyCandidateGrid()
+        this.hasExample = true
+        this.isExampleLoading = false
+        this.logs = []
+        this.nextLogId = 1
+        this.nextStep = 'checkCandidates'
+        this.recentlyPlacedCells = []
+        this.solverMode = 'ready'
+        this.addLog('Random valid Sudoku example loaded.')
+      })
     },
     addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
@@ -201,7 +218,7 @@ export const useSudokuStore = defineStore('sudoku', {
       return { emptyCells, impossibleCells, singleCandidates }
     },
     startSolver() {
-      if (this.solverMode !== 'ready') return
+      if (!this.hasExample || this.solverMode !== 'ready') return
 
       this.logs = []
       this.nextLogId = 1
@@ -279,7 +296,7 @@ export const useSudokuStore = defineStore('sudoku', {
       this.fillSingleCandidates()
     },
     async autoSolve() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = autoRunController.start()
       this.isAutoSolving = true

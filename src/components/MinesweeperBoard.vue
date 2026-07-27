@@ -1,6 +1,8 @@
 <template>
   <SolverWorkspace
+    :has-example="hasExample"
     :is-auto-solving="isAutoSolving"
+    :is-example-loading="isExampleLoading"
     :logs="logs"
     :mode="solverMode"
     :progress="`${flaggedMines} / ${mineCount}`"
@@ -34,5 +36,5 @@ import { useMinesweeperStore } from '../stores/minesweeper'
 const { title } = defineProps<{ title: string }>()
 
 const minesweeperStore = useMinesweeperStore()
-const { board, flaggedMines, isAutoSolving, logs, mineCount, recentlyUpdatedCells, solverMode } = storeToRefs(minesweeperStore)
+const { board, flaggedMines, hasExample, isAutoSolving, isExampleLoading, logs, mineCount, recentlyUpdatedCells, solverMode } = storeToRefs(minesweeperStore)
 </script>

@@ -1,6 +1,8 @@
 <template>
   <SolverWorkspace
+    :has-example="hasExample"
     :is-auto-solving="isAutoSolving"
+    :is-example-loading="isExampleLoading"
     :logs="logs"
     :mode="solverMode"
     :progress="`${resolvedCells} / 25 resolved`"
@@ -52,7 +54,7 @@ import { useFutoshikiStore } from '../stores/futoshiki'
 const { title } = defineProps<{ title: string }>()
 
 const futoshikiStore = useFutoshikiStore()
-const { board, inequalities, isAutoSolving, logs, recentlyUpdatedCells, resolvedCells, solverMode } = storeToRefs(futoshikiStore)
+const { board, hasExample, inequalities, isAutoSolving, isExampleLoading, logs, recentlyUpdatedCells, resolvedCells, solverMode } = storeToRefs(futoshikiStore)
 
 const horizontalRelations = computed(() => {
   const relations = new Map<string, string>()

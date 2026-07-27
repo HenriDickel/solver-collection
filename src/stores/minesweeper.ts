@@ -4,6 +4,7 @@ import type {
   MinesweeperCell,
 } from '../types/minesweeper'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { ExamplePool } from '../utils/example-pool'
 import { getGridCellKey } from '../utils/grid'
 import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
@@ -11,18 +12,7 @@ import { createSolverRunController, waitForSolverStep } from '../utils/solver-ru
 const boardSize = 15
 const autoStepDelay = 350
 const maxAutoSteps = 50
-const mineLocations = new Set([
-  '0-13', '0-14', '1-2', '1-7', '1-10', '1-11', '2-2', '2-5', '2-7', '2-14',
-  '3-12', '5-6', '5-7', '5-13', '7-6', '7-12', '7-13', '8-1', '8-8', '9-0',
-  '9-1', '9-2', '10-4', '10-10', '10-11', '10-12', '11-0', '11-2', '11-3', '11-6',
-  '12-4', '12-12', '12-14', '13-1', '13-3', '13-4', '13-8', '13-10', '14-5', '14-6',
-])
-const initiallyHiddenSafeCells = new Set([
-  '0-1', '0-2', '0-3', '0-4', '0-5', '0-6', '0-7', '0-12', '1-0', '1-1',
-  '1-3', '1-5', '1-6', '1-13', '2-1', '2-9', '2-11', '2-12', '3-0', '3-4',
-  '3-5', '3-11', '6-2', '7-4', '7-5', '7-7', '7-9', '7-11', '8-6', '8-7',
-  '9-4', '9-9', '10-13', '10-14', '12-0',
-])
+const totalMineCount = 40
 
 const autoRunController = createSolverRunController()
 
@@ -64,10 +54,6 @@ function createBoard(mines: ReadonlySet<string>, hiddenSafeCells: ReadonlySet<st
       }
     }),
   )
-}
-
-function createInitialBoard(): MinesweeperBoard {
-  return createBoard(mineLocations, initiallyHiddenSafeCells)
 }
 
 function cloneBoard(board: MinesweeperBoard): MinesweeperBoard {
@@ -149,7 +135,7 @@ function createGuaranteedSolvableBoard(): MinesweeperBoard {
     }
   }
 
-  return createBoard(new Set(shuffle(candidateMineCells).slice(0, mineLocations.size)), new Set())
+  return createBoard(new Set(shuffle(candidateMineCells).slice(0, totalMineCount)), new Set())
 }
 
 function createRandomSolvableBoard(): MinesweeperBoard {
@@ -185,10 +171,18 @@ function createRandomSolvableBoard(): MinesweeperBoard {
   return bestBoard
 }
 
+const minesweeperExamplePool = new ExamplePool<MinesweeperBoard>(createRandomSolvableBoard)
+
+export function preloadMinesweeperExamples(): void {
+  minesweeperExamplePool.preload()
+}
+
 export const useMinesweeperStore = defineStore('minesweeper', {
   state: () => ({
-    board: createInitialBoard(),
+    board: [] as MinesweeperBoard,
+    hasExample: false,
     isAutoSolving: false,
+    isExampleLoading: false,
     logs: [] as SolverLog[],
     nextLogId: 1,
     recentlyUpdatedCells: [] as string[],
@@ -196,38 +190,36 @@ export const useMinesweeperStore = defineStore('minesweeper', {
   }),
   getters: {
     flaggedMines: (state) => state.board.flat().filter((cell) => cell.state === 'flagged').length,
-    mineCount: () => mineLocations.size,
+    mineCount: () => totalMineCount,
   },
   actions: {
     addLog(message: string, level: SolverLogLevel = 'info') {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
-    resetBoard() {
-      autoRunController.cancel()
-      this.board = createInitialBoard()
-      this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solverMode = 'ready'
-      this.addLog('Board reset. The solver is ready.')
-    },
     loadRandomExample() {
       autoRunController.cancel()
-      this.board = createRandomSolvableBoard()
       this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solverMode = 'ready'
-      this.addLog('Random Minesweeper board generated.')
+
+      if (this.isExampleLoading) return
+
+      this.isExampleLoading = true
+      minesweeperExamplePool.take((board) => {
+        this.board = board
+        this.hasExample = true
+        this.isExampleLoading = false
+        this.logs = []
+        this.nextLogId = 1
+        this.recentlyUpdatedCells = []
+        this.solverMode = 'ready'
+        this.addLog('Random Minesweeper board generated.')
+      })
     },
     getCell(rowIndex: number, columnIndex: number): MinesweeperCell {
       return this.board[rowIndex][columnIndex]
     },
     advanceSolver() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck') return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck') return
 
       if (this.solverMode === 'ready') {
         this.logs = []
@@ -305,7 +297,7 @@ export const useMinesweeperStore = defineStore('minesweeper', {
       this.addLog(`${this.recentlyUpdatedCells.length} certain moves were applied.`, 'success')
     },
     async autoSolve() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = autoRunController.start()
       this.isAutoSolving = true

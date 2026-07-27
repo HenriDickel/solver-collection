@@ -1,6 +1,8 @@
 <template>
   <SolverWorkspace
+    :has-example="hasExample"
     :is-auto-solving="isAutoSolving"
+    :is-example-loading="isExampleLoading"
     :logs="logs"
     :mode="solverMode"
     :progress="`${exploredCells} / ${walkableCells} explored`"
@@ -34,5 +36,5 @@ import { useMazeStore } from '../stores/maze'
 const { title } = defineProps<{ title: string }>()
 
 const mazeStore = useMazeStore()
-const { board, exploredCells, isAutoSolving, logs, recentlyUpdatedCells, solverMode, walkableCells } = storeToRefs(mazeStore)
+const { board, exploredCells, hasExample, isAutoSolving, isExampleLoading, logs, recentlyUpdatedCells, solverMode, walkableCells } = storeToRefs(mazeStore)
 </script>

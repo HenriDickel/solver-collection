@@ -415,11 +415,19 @@
     @apply border-line;
   }
 
-  .board-card--solving {
-    @apply border-accent bg-accent-soft;
-  }
+    .board-card--solving {
+      @apply border-accent bg-accent-soft;
+    }
 
-  .board-header {
+    .solver-empty-state {
+      @apply flex aspect-square min-h-64 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-line bg-canvas px-6 text-center text-sm font-medium text-muted;
+    }
+
+    .solver-empty-state__spinner {
+      @apply h-8 w-8 animate-spin rounded-full border-4 border-accent-soft border-t-accent;
+    }
+
+    .board-header {
     @apply mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-start sm:justify-between;
   }
 

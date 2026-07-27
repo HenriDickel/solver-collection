@@ -5,6 +5,7 @@ import type {
   NonogramResolvedCellState,
 } from '../types/nonogram'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { ExamplePool } from '../utils/example-pool'
 import { getGridCellKey } from '../utils/grid'
 import { randomInteger } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
@@ -196,23 +197,27 @@ function createPuzzle(solution: readonly string[]) {
   }
 }
 
-export const useNonogramStore = defineStore('nonogram', {
-  state: () => {
-    const puzzle = createPuzzle(nonogramSolution)
+const nonogramExamplePool = new ExamplePool<string[]>(createRandomSolution)
 
-    return {
-      board: puzzle.board,
-      columnClues: puzzle.columnClues,
-      isAutoSolving: false,
-      logs: [] as SolverLog[],
-      nextLogId: 1,
-      recentlyUpdatedCells: [] as string[],
-      rowClues: puzzle.rowClues,
-      solverMode: 'ready' as SolverMode,
-    }
-  },
+export function preloadNonogramExamples(): void {
+  nonogramExamplePool.preload()
+}
+
+export const useNonogramStore = defineStore('nonogram', {
+  state: () => ({
+    board: [] as NonogramBoard,
+    columnClues: [] as number[][],
+    hasExample: false,
+    isAutoSolving: false,
+    isExampleLoading: false,
+    logs: [] as SolverLog[],
+    nextLogId: 1,
+    recentlyUpdatedCells: [] as string[],
+    rowClues: [] as number[][],
+    solverMode: 'ready' as SolverMode,
+  }),
   getters: {
-    cellCount: (state) => state.board.length * state.board[0].length,
+    cellCount: (state) => state.board.length === 0 ? 0 : state.board.length * state.board[0].length,
     knownCells: (state) => state.board.flat().filter((cell) => cell.state !== 'unknown').length,
   },
   actions: {
@@ -220,34 +225,29 @@ export const useNonogramStore = defineStore('nonogram', {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
-    resetBoard() {
-      autoRunController.cancel()
-      const puzzle = createPuzzle(nonogramSolution)
-      this.board = puzzle.board
-      this.columnClues = puzzle.columnClues
-      this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.rowClues = puzzle.rowClues
-      this.solverMode = 'ready'
-      this.addLog('Puzzle reset. The solver is ready.')
-    },
     loadRandomExample() {
       autoRunController.cancel()
-      const puzzle = createPuzzle(createRandomSolution())
-      this.board = puzzle.board
-      this.columnClues = puzzle.columnClues
       this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.rowClues = puzzle.rowClues
-      this.solverMode = 'ready'
-      this.addLog('Random Nonogram picture generated.')
+
+      if (this.isExampleLoading) return
+
+      this.isExampleLoading = true
+      nonogramExamplePool.take((solution) => {
+        const puzzle = createPuzzle(solution)
+        this.board = puzzle.board
+        this.columnClues = puzzle.columnClues
+        this.hasExample = true
+        this.isExampleLoading = false
+        this.logs = []
+        this.nextLogId = 1
+        this.recentlyUpdatedCells = []
+        this.rowClues = puzzle.rowClues
+        this.solverMode = 'ready'
+        this.addLog('Random Nonogram picture generated.')
+      })
     },
     startSolver() {
-      if (this.solverMode !== 'ready') return
+      if (!this.hasExample || this.solverMode !== 'ready') return
 
       this.logs = []
       this.nextLogId = 1
@@ -255,7 +255,7 @@ export const useNonogramStore = defineStore('nonogram', {
       this.addLog('Solver started. Comparing each line with its possible patterns.', 'success')
     },
     advanceSolver() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck') return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck') return
 
       if (this.solverMode === 'ready') {
         this.startSolver()
@@ -309,7 +309,7 @@ export const useNonogramStore = defineStore('nonogram', {
       this.addLog(`Applied ${updatedCells} certain cells: ${filledCells} filled and ${emptyCells} empty.`, 'success')
     },
     async autoSolve() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = autoRunController.start()
       this.isAutoSolving = true

@@ -9,6 +9,7 @@ import type {
   KenKenSolution,
 } from '../types/kenken'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { ExamplePool } from '../utils/example-pool'
 import { getGridCellKey } from '../utils/grid'
 import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
@@ -80,10 +81,10 @@ function getCageTarget(cage: Omit<KenKenCage, 'target'>, solution: KenKenSolutio
 
 function createCages(solution: KenKenSolution): KenKenCage[] {
   return cageTemplates.map((cage) => ({
-      ...cage,
-      cells: cage.cells.map((cell) => ({ ...cell })),
-      target: getCageTarget(cage, solution),
-    }))
+    ...cage,
+    cells: cage.cells.map((cell) => ({ ...cell })),
+    target: getCageTarget(cage, solution),
+  }))
 }
 
 function createRandomSolution(): KenKenSolution {
@@ -216,21 +217,25 @@ function createRandomSolvableCages(): KenKenCage[] {
   return createCages(baseSolution)
 }
 
-export const useKenKenStore = defineStore('kenken', {
-  state: () => {
-    const cages = createCages(baseSolution)
+const kenKenExamplePool = new ExamplePool<KenKenCage[]>(createRandomSolvableCages)
 
-    return {
-      board: createBoard(cages),
-      cages,
-      isAutoSolving: false,
-      logs: [] as SolverLog[],
-      nextLogId: 1,
-      recentlyUpdatedCells: [] as string[],
-      solution: null as KenKenSolution | null,
-      solverMode: 'ready' as SolverMode,
-    }
-  },
+export function preloadKenKenExamples(): void {
+  kenKenExamplePool.preload()
+}
+
+export const useKenKenStore = defineStore('kenken', {
+  state: () => ({
+    board: [] as KenKenBoard,
+    cages: [] as KenKenCage[],
+    hasExample: false,
+    isAutoSolving: false,
+    isExampleLoading: false,
+    logs: [] as SolverLog[],
+    nextLogId: 1,
+    recentlyUpdatedCells: [] as string[],
+    solution: null as KenKenSolution | null,
+    solverMode: 'ready' as SolverMode,
+  }),
   getters: {
     resolvedCells: (state) => state.board.flat().filter((cell) => cell.value !== null).length,
   },
@@ -239,31 +244,28 @@ export const useKenKenStore = defineStore('kenken', {
       this.logs.push({ id: this.nextLogId, level, message })
       this.nextLogId += 1
     },
-    resetBoard() {
-      autoRunController.cancel()
-      this.board = createBoard(this.cages)
-      this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solution = null
-      this.solverMode = 'ready'
-      this.addLog('Puzzle reset. The solver is ready.')
-    },
     loadRandomExample() {
       autoRunController.cancel()
-      this.cages = createRandomSolvableCages()
-      this.board = createBoard(this.cages)
       this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.recentlyUpdatedCells = []
-      this.solution = null
-      this.solverMode = 'ready'
-      this.addLog('Random valid KenKen example generated.')
+
+      if (this.isExampleLoading) return
+
+      this.isExampleLoading = true
+      kenKenExamplePool.take((cages) => {
+        this.cages = cages
+        this.board = createBoard(cages)
+        this.hasExample = true
+        this.isExampleLoading = false
+        this.logs = []
+        this.nextLogId = 1
+        this.recentlyUpdatedCells = []
+        this.solution = null
+        this.solverMode = 'ready'
+        this.addLog('Random valid KenKen example generated.')
+      })
     },
     startSolver() {
-      if (this.solverMode !== 'ready') return
+      if (!this.hasExample || this.solverMode !== 'ready') return
 
       const grid = this.board.map((row) => row.map((cell) => cell.value))
       const solution = findSolution(grid, this.cages)
@@ -281,7 +283,7 @@ export const useKenKenStore = defineStore('kenken', {
       this.addLog('Constraint search found a valid grid for all cages.', 'success')
     },
     advanceSolver() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck') return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck') return
 
       if (this.solverMode === 'ready') {
         this.startSolver()
@@ -311,7 +313,7 @@ export const useKenKenStore = defineStore('kenken', {
       }
     },
     async autoSolve() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = autoRunController.start()
       this.isAutoSolving = true

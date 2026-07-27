@@ -1,6 +1,8 @@
 <template>
   <SolverWorkspace
+    :has-example="hasExample"
     :is-auto-solving="isAutoSolving"
+    :is-example-loading="isExampleLoading"
     :logs="logs"
     :mode="solverMode"
     :progress="`${filledCells} / 81`"
@@ -35,5 +37,5 @@ import { useSudokuStore } from '../stores/sudoku'
 const { title } = defineProps<{ title: string }>()
 
 const sudokuStore = useSudokuStore()
-const { board, candidates, filledCells, isAutoSolving, logs, recentlyPlacedCells, solverMode } = storeToRefs(sudokuStore)
+const { board, candidates, filledCells, hasExample, isAutoSolving, isExampleLoading, logs, recentlyPlacedCells, solverMode } = storeToRefs(sudokuStore)
 </script>

@@ -6,6 +6,7 @@ import type {
   MazePosition,
 } from '../types/maze'
 import type { SolverLog, SolverLogLevel, SolverMode } from '../types/solver'
+import { ExamplePool } from '../utils/example-pool'
 import { getGridCellKey } from '../utils/grid'
 import { shuffle } from '../utils/random'
 import { createSolverRunController, waitForSolverStep } from '../utils/solver-run'
@@ -46,10 +47,6 @@ function createBoardFromLayout(layout: readonly string[]): MazeBoard {
       state: 'unvisited',
     })),
   )
-}
-
-function createInitialBoard(): MazeBoard {
-  return createBoardFromLayout(mazeLayout)
 }
 
 function createRandomMazeLayout(): string[] {
@@ -131,10 +128,18 @@ function createRandomSolvableMazeLayout(): string[] {
   return mazeLayout
 }
 
+const mazeExamplePool = new ExamplePool<string[]>(createRandomSolvableMazeLayout)
+
+export function preloadMazeExamples(): void {
+  mazeExamplePool.preload()
+}
+
 export const useMazeStore = defineStore('maze', {
   state: () => ({
-    board: createInitialBoard(),
+    board: [] as MazeBoard,
+    hasExample: false,
     isAutoSolving: false,
+    isExampleLoading: false,
     logs: [] as SolverLog[],
     nextLogId: 1,
     previousCells: {} as Record<string, string | null>,
@@ -173,34 +178,29 @@ export const useMazeStore = defineStore('maze', {
 
       return neighbors
     },
-    resetBoard() {
-      autoRunController.cancel()
-      this.board = createInitialBoard()
-      this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.previousCells = {}
-      this.queue = []
-      this.queueCursor = 0
-      this.recentlyUpdatedCells = []
-      this.solverMode = 'ready'
-      this.addLog('Maze reset. The solver is ready.')
-    },
     loadRandomExample() {
       autoRunController.cancel()
-      this.board = createBoardFromLayout(createRandomSolvableMazeLayout())
       this.isAutoSolving = false
-      this.logs = []
-      this.nextLogId = 1
-      this.previousCells = {}
-      this.queue = []
-      this.queueCursor = 0
-      this.recentlyUpdatedCells = []
-      this.solverMode = 'ready'
-      this.addLog('Random maze generated.')
+
+      if (this.isExampleLoading) return
+
+      this.isExampleLoading = true
+      mazeExamplePool.take((layout) => {
+        this.board = createBoardFromLayout(layout)
+        this.hasExample = true
+        this.isExampleLoading = false
+        this.logs = []
+        this.nextLogId = 1
+        this.previousCells = {}
+        this.queue = []
+        this.queueCursor = 0
+        this.recentlyUpdatedCells = []
+        this.solverMode = 'ready'
+        this.addLog('Random maze generated.')
+      })
     },
     startSolver() {
-      if (this.solverMode !== 'ready') return
+      if (!this.hasExample || this.solverMode !== 'ready') return
 
       const startRowIndex = 1
       const startColumnIndex = 1
@@ -305,7 +305,7 @@ export const useMazeStore = defineStore('maze', {
       }
     },
     async autoSolve() {
-      if (this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
+      if (!this.hasExample || this.solverMode === 'solved' || this.solverMode === 'stuck' || this.isAutoSolving) return
 
       const autoRun = autoRunController.start()
       this.isAutoSolving = true
