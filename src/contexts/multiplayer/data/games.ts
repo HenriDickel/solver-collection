@@ -7,7 +7,6 @@ export const multiplayerGames: MultiplayerGame[] = [
     players: '3–12 players',
     section: 'multiplayer',
     slug: 'imposter',
-    symbol: '◉',
     title: 'Imposter',
   },
   {
@@ -16,7 +15,6 @@ export const multiplayerGames: MultiplayerGame[] = [
     players: '2+ players',
     section: 'multiplayer',
     slug: 'charades',
-    symbol: '✦',
     title: 'Charades',
   },
   {
@@ -25,7 +23,6 @@ export const multiplayerGames: MultiplayerGame[] = [
     players: '2+ players',
     section: 'multiplayer',
     slug: 'never-have-i-ever',
-    symbol: '…',
     title: 'Never Have I Ever',
   },
   {
@@ -34,7 +31,6 @@ export const multiplayerGames: MultiplayerGame[] = [
     players: '2+ players',
     section: 'multiplayer',
     slug: 'kiss-marry-kill',
-    symbol: '♥',
     title: 'Kiss, Marry, Kill',
   },
   {
@@ -43,7 +39,6 @@ export const multiplayerGames: MultiplayerGame[] = [
     players: '2–10 players',
     section: 'multiplayer',
     slug: 'who-am-i',
-    symbol: '?',
     title: 'Who Am I?',
   },
   {
@@ -52,7 +47,6 @@ export const multiplayerGames: MultiplayerGame[] = [
     players: '2+ players',
     section: 'multiplayer',
     slug: 'would-you-rather',
-    symbol: '↔',
     title: 'Would You Rather',
   },
 ]

@@ -130,10 +130,6 @@ function createRandomSolvableMazeLayout(): string[] {
 
 const mazeExamplePool = new ExamplePool<string[]>(createRandomSolvableMazeLayout)
 
-export function preloadMazeExamples(): void {
-  mazeExamplePool.preload()
-}
-
 export const useMazeStore = defineStore('maze', {
   state: () => ({
     board: [] as MazeBoard,

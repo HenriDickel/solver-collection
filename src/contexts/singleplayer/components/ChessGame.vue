@@ -4,12 +4,12 @@
       <div class="play-card-header">
         <div>
           <p class="eyebrow">Solo match</p>
-          <h2 id="game-board-title">Chess against the computer</h2>
+          <h2 id="game-board-title">Kill the King chess</h2>
         </div>
         <span class="play-progress">{{ computerThinking ? 'Thinking…' : winner ?? 'Your move' }}</span>
       </div>
 
-      <div class="play-chess-grid" role="grid" aria-label="Chess board">
+      <div class="play-chess-grid" role="grid" aria-label="Kill the King chess board">
         <button
           v-for="(piece, cellIndex) in board.flat()"
           :key="cellIndex"
@@ -28,7 +28,7 @@
         </button>
       </div>
 
-      <p class="play-hint">{{ statusMessage }}</p>
+      <p class="play-hint">{{ statusMessage }} Capture the opposing king to win. Check and checkmate do not apply.</p>
       <button class="play-secondary-button" type="button" @click="startNewGame">New game</button>
     </article>
   </section>

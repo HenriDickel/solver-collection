@@ -1,4 +1,4 @@
-# Solver Collection
+# Bartagames
 
 A Vue, Pinia, and Tailwind CSS collection of visual solvers, singleplayer games, and local multiplayer party games.
 

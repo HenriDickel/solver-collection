@@ -12,6 +12,5 @@ export interface SolverGame {
   description: string
   path: string
   slug: GameSlug
-  symbol: string
   title: string
 }

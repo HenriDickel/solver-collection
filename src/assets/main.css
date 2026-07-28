@@ -101,7 +101,7 @@
   }
 
   .site-brand-mark {
-    @apply block size-9 shrink-0 rounded-xl shadow-sm;
+    @apply block size-10 shrink-0 rounded-full border border-accent/20 bg-accent-soft p-1 object-contain shadow-sm;
   }
 
   .site-brand-copy {
@@ -130,16 +130,12 @@
     @apply hidden sm:inline;
   }
 
-  .game-nav-shell {
+  .collection-nav-shell {
     @apply border-t border-line/70 bg-surface/65;
   }
 
-  .collection-nav-shell {
-    @apply border-t border-line/70 bg-surface/85;
-  }
-
   .collection-nav {
-    @apply mx-auto flex w-full max-w-6xl items-center gap-2 overflow-x-auto px-4 py-2 sm:px-10;
+    @apply mx-auto flex w-full max-w-6xl items-center justify-start gap-2 overflow-x-auto px-4 py-2 sm:justify-center sm:px-10;
     scrollbar-width: thin;
   }
 
@@ -149,23 +145,6 @@
 
   .collection-nav-link--active {
     @apply bg-strong text-white shadow-sm;
-  }
-
-  .game-nav {
-    @apply mx-auto flex w-full max-w-6xl items-center gap-1 overflow-x-auto px-4 py-2 sm:px-10;
-    scrollbar-width: thin;
-  }
-
-  .game-nav-link {
-    @apply shrink-0 rounded-lg px-3 py-1.5 text-xs font-extrabold text-muted no-underline transition hover:bg-accent-soft hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
-  }
-
-  .game-nav-link.router-link-active {
-    @apply bg-accent text-white shadow-sm;
-  }
-
-  .game-nav-link--all {
-    @apply bg-accent-soft text-accent;
   }
 
   .site-footer {
@@ -420,6 +399,10 @@
     @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-strong px-2 text-xs font-black text-white shadow-sm;
   }
 
+  .game-card-symbol svg {
+    @apply size-6;
+  }
+
   .game-card-category {
     @apply text-right text-[0.625rem] font-extrabold tracking-[0.1em] text-muted uppercase;
   }
@@ -579,6 +562,14 @@
     @apply border border-line bg-surface text-muted hover:border-ink hover:text-ink;
   }
 
+  .play-action-row {
+    @apply mt-5 flex flex-wrap gap-2;
+  }
+
+  .play-action-row .play-secondary-button {
+    @apply mt-0;
+  }
+
   .party-primary-button {
     @apply bg-accent text-white shadow-sm hover:bg-strong;
   }
@@ -628,6 +619,37 @@
 
   .play-number-pad .play-number-pad__clear {
     @apply col-span-1 text-muted sm:col-span-1;
+  }
+
+  .play-mine-board {
+    @apply grid aspect-square overflow-hidden rounded-xl border-2 border-ink bg-line;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-rows: repeat(9, minmax(0, 1fr));
+    gap: 1px;
+  }
+
+  .play-mine-cell {
+    @apply flex min-h-0 min-w-0 items-center justify-center bg-surface text-xs font-extrabold text-ink transition hover:bg-accent-soft focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-accent sm:text-sm;
+  }
+
+  .play-mine-cell--hidden {
+    background-color: var(--color-mine-hidden);
+  }
+
+  .play-mine-cell--flagged {
+    @apply bg-rose-100 text-rose-600;
+  }
+
+  .play-mine-cell--revealed {
+    @apply bg-surface;
+  }
+
+  .play-mine-cell--mine {
+    @apply bg-rose-600 text-white;
+  }
+
+  :root[data-theme="dark"] .play-mine-cell--flagged {
+    @apply bg-rose-950 text-rose-300;
   }
 
   .play-chess-grid {
@@ -708,12 +730,12 @@
     @apply flex min-h-0 min-w-0 items-center justify-center bg-surface text-lg font-extrabold text-muted transition hover:bg-accent-soft focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-accent;
   }
 
-  .play-nonogram-cell--filled {
+  .play-nonogram-cell--marked {
     @apply bg-strong;
   }
 
   .play-nonogram-cell--empty {
-    @apply bg-surface text-accent;
+    @apply bg-surface;
   }
 
   .party-card {
@@ -874,12 +896,12 @@
       display: none;
     }
 
-    .site-all-games {
-      @apply px-2.5;
+    .collection-nav {
+      @apply justify-center gap-1 px-3;
     }
 
-    .game-nav {
-      @apply px-4;
+    .collection-nav-link {
+      @apply px-2.5;
     }
 
     .collection-hero h1 {

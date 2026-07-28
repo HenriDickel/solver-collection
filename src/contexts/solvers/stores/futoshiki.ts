@@ -156,10 +156,6 @@ function createRandomSolvableInequalities(): FutoshikiInequality[] {
 
 const futoshikiExamplePool = new ExamplePool<FutoshikiInequality[]>(createRandomSolvableInequalities)
 
-export function preloadFutoshikiExamples(): void {
-  futoshikiExamplePool.preload()
-}
-
 export const useFutoshikiStore = defineStore('futoshiki', {
   state: () => ({
     board: [] as FutoshikiGrid,

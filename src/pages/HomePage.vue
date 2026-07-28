@@ -73,7 +73,7 @@
         >
           <span class="game-card-glow" aria-hidden="true"></span>
           <div class="game-card-topline">
-            <span class="game-card-symbol" aria-hidden="true">{{ game.symbol }}</span>
+            <span class="game-card-symbol" aria-hidden="true"><GameIcon :slug="game.slug" /></span>
             <span class="game-card-category">{{ game.category }}</span>
           </div>
           <h3>{{ game.title }}</h3>
@@ -103,7 +103,7 @@
         >
           <span class="game-card-glow" aria-hidden="true"></span>
           <div class="game-card-topline">
-            <span class="game-card-symbol" aria-hidden="true">{{ game.symbol }}</span>
+            <span class="game-card-symbol" aria-hidden="true"><GameIcon :slug="game.slug" /></span>
             <span class="game-card-category">{{ game.players }}</span>
           </div>
           <h3>{{ game.title }}</h3>
@@ -133,7 +133,7 @@
         >
           <span class="game-card-glow" aria-hidden="true"></span>
           <div class="game-card-topline">
-            <span class="game-card-symbol" aria-hidden="true">{{ game.symbol }}</span>
+            <span class="game-card-symbol" aria-hidden="true"><GameIcon :slug="game.slug" /></span>
             <span class="game-card-category">{{ game.players }}</span>
           </div>
           <h3>{{ game.title }}</h3>
@@ -147,6 +147,7 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import GameIcon from '../components/GameIcon.vue'
 import { games } from '../contexts/solvers/data/games'
 import { multiplayerGames } from '../contexts/multiplayer/data/games'
 import { singleplayerGames } from '../contexts/singleplayer/data/games'

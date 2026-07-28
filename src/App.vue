@@ -3,10 +3,10 @@
     <header class="site-header">
       <nav class="site-nav" aria-label="Primary navigation">
         <RouterLink class="site-brand" to="/">
-          <img class="site-brand-mark" :src="faviconUrl" alt="" aria-hidden="true" />
+          <img class="site-brand-mark" :src="brandMarkUrl" alt="" aria-hidden="true" />
           <span class="site-brand-copy">
-            <span>Solver Collection</span>
-            <span class="site-brand-subtitle">Interactive puzzle lab</span>
+            <span>Bartagames</span>
+            <span class="site-brand-subtitle">Puzzle &amp; game collection</span>
           </span>
         </RouterLink>
         <button
@@ -27,18 +27,10 @@
         </button>
       </nav>
       <div class="collection-nav-shell">
-        <nav class="collection-nav" aria-label="Collection categories">
-          <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'solvers' }" to="/solvers">Solvers</RouterLink>
-          <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'singleplayer' }" to="/singleplayer">Singleplayer</RouterLink>
+        <nav class="collection-nav" aria-label="Game categories">
           <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'multiplayer' }" to="/multiplayer">Multiplayer</RouterLink>
-        </nav>
-      </div>
-      <div class="game-nav-shell">
-        <nav class="game-nav" :aria-label="`${activeSectionLabel} games`">
-          <RouterLink class="game-nav-link game-nav-link--all" :to="activeSectionPath">All {{ activeSectionLabel }}</RouterLink>
-          <RouterLink v-for="game in activeGames" :key="game.slug" class="game-nav-link" :to="game.path">
-            {{ game.title }}
-          </RouterLink>
+          <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'singleplayer' }" to="/singleplayer">Singleplayer</RouterLink>
+          <RouterLink class="collection-nav-link" :class="{ 'collection-nav-link--active': activeSection === 'solvers' }" to="/solvers">Solvers</RouterLink>
         </nav>
       </div>
     </header>
@@ -47,7 +39,7 @@
 
     <footer class="site-footer">
       <div class="site-footer-inner">
-        <p class="site-footer-copyright">&copy; {{ currentYear }} Solver Collection</p>
+        <p class="site-footer-copyright">&copy; {{ currentYear }} Bartagames</p>
         <nav class="site-footer-links" aria-label="Legal information">
           <RouterLink to="/privacy">Privacy</RouterLink>
           <RouterLink to="/legal-notice">Legal notice</RouterLink>
@@ -59,23 +51,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { games } from './contexts/solvers/data/games'
-import { multiplayerGames } from './contexts/multiplayer/data/games'
-import { singleplayerGames } from './contexts/singleplayer/data/games'
-import { preloadFutoshikiExamples } from './contexts/solvers/stores/futoshiki'
-import { preloadKenKenExamples } from './contexts/solvers/stores/kenken'
-import { preloadMazeExamples } from './contexts/solvers/stores/maze'
-import { preloadMinesweeperExamples } from './contexts/solvers/stores/minesweeper'
-import { preloadNonogramExamples } from './contexts/solvers/stores/nonogram'
-import { preloadNurikabeExamples } from './contexts/solvers/stores/nurikabe'
-import { preloadSudokuExamples } from './contexts/solvers/stores/sudoku'
 import { applyTheme, getPreferredTheme } from './contexts/shared/utils/theme'
 import type { Theme } from './contexts/shared/utils/theme'
 
 const currentYear = new Date().getFullYear()
-const faviconUrl = `${import.meta.env.BASE_URL}favicon.svg`
+const brandMarkUrl = `${import.meta.env.BASE_URL}bartagames-mark.png`
 const theme = ref<Theme>(getPreferredTheme())
 const route = useRoute()
 const activeSection = computed(() => {
@@ -83,29 +65,10 @@ const activeSection = computed(() => {
   if (route.path.startsWith('/party/') || route.path.startsWith('/multiplayer')) return 'multiplayer'
   return 'solvers'
 })
-const activeGames = computed(() => {
-  if (activeSection.value === 'singleplayer') return singleplayerGames
-  if (activeSection.value === 'multiplayer') return multiplayerGames
-  return games
-})
-const activeSectionLabel = computed(() => (
-  activeSection.value === 'singleplayer' ? 'Singleplayer' : activeSection.value === 'multiplayer' ? 'Multiplayer' : 'Solvers'
-))
-const activeSectionPath = computed(() => `/${activeSection.value}`)
-
 function toggleTheme(): void {
   const nextTheme: Theme = theme.value === 'dark' ? 'light' : 'dark'
   applyTheme(nextTheme, true)
   theme.value = nextTheme
 }
 
-onMounted(() => {
-  preloadSudokuExamples()
-  preloadMinesweeperExamples()
-  preloadMazeExamples()
-  preloadNonogramExamples()
-  preloadKenKenExamples()
-  preloadFutoshikiExamples()
-  preloadNurikabeExamples()
-})
 </script>

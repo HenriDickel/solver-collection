@@ -7,14 +7,16 @@
     </section>
 
     <SudokuGame v-if="game.slug === 'sudoku'" />
+    <MinesweeperGame v-else-if="game.slug === 'minesweeper'" />
     <ChessGame v-else-if="game.slug === 'chess'" />
-    <NonogramGame v-else />
+    <NonogramGame v-else-if="game.slug === 'nonogram'" />
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import ChessGame from '../components/ChessGame.vue'
+import MinesweeperGame from '../components/MinesweeperGame.vue'
 import NonogramGame from '../components/NonogramGame.vue'
 import SudokuGame from '../components/SudokuGame.vue'
 import { getSingleplayerGameBySlug } from '../data/games'

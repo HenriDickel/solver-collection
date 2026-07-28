@@ -219,10 +219,6 @@ function createRandomSolvableCages(): KenKenCage[] {
 
 const kenKenExamplePool = new ExamplePool<KenKenCage[]>(createRandomSolvableCages)
 
-export function preloadKenKenExamples(): void {
-  kenKenExamplePool.preload()
-}
-
 export const useKenKenStore = defineStore('kenken', {
   state: () => ({
     board: [] as KenKenBoard,

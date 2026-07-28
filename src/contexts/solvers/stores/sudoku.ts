@@ -125,10 +125,6 @@ function createEmptyCandidateGrid(): SudokuCandidateGrid {
 
 const sudokuExamplePool = new ExamplePool<SudokuGrid>(createRandomSolvableBoard)
 
-export function preloadSudokuExamples(): void {
-  sudokuExamplePool.preload()
-}
-
 export const useSudokuStore = defineStore('sudoku', {
   state: () => ({
     board: createEmptyBoard(),

@@ -132,10 +132,6 @@ function createRandomSolvableVariant(): NurikabeIsland[] {
 
 const nurikabeExamplePool = new ExamplePool<NurikabeIsland[]>(createRandomSolvableVariant)
 
-export function preloadNurikabeExamples(): void {
-  nurikabeExamplePool.preload()
-}
-
 export const useNurikabeStore = defineStore('nurikabe', {
   state: () => ({
     board: [] as NurikabeBoard,

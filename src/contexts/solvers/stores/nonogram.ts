@@ -199,10 +199,6 @@ function createPuzzle(solution: readonly string[]) {
 
 const nonogramExamplePool = new ExamplePool<string[]>(createRandomSolution)
 
-export function preloadNonogramExamples(): void {
-  nonogramExamplePool.preload()
-}
-
 export const useNonogramStore = defineStore('nonogram', {
   state: () => ({
     board: [] as NonogramBoard,

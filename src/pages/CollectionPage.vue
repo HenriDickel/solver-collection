@@ -17,7 +17,7 @@
       >
         <span class="game-card-glow" aria-hidden="true"></span>
         <div class="game-card-topline">
-          <span class="game-card-symbol" aria-hidden="true">{{ game.symbol }}</span>
+          <span class="game-card-symbol" aria-hidden="true"><GameIcon :slug="game.slug" /></span>
           <span class="game-card-category">{{ 'players' in game ? game.players : game.category }}</span>
         </div>
         <h2>{{ game.title }}</h2>
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import GameIcon from '../components/GameIcon.vue'
 import { games as solverGames } from '../contexts/solvers/data/games'
 import { multiplayerGames } from '../contexts/multiplayer/data/games'
 import { singleplayerGames } from '../contexts/singleplayer/data/games'

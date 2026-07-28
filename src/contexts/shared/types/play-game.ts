@@ -1,6 +1,6 @@
 export type PlaySection = 'singleplayer' | 'multiplayer'
 
-export type SingleplayerGameSlug = 'sudoku' | 'chess' | 'nonogram'
+export type SingleplayerGameSlug = 'sudoku' | 'minesweeper' | 'chess' | 'nonogram'
 
 export type MultiplayerGameSlug =
   | 'imposter'
@@ -16,7 +16,6 @@ interface PlayGameBase {
   description: string
   path: string
   players: string
-  symbol: string
   title: string
 }
 

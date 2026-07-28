@@ -7,16 +7,22 @@ export const singleplayerGames: SingleplayerGame[] = [
     players: '1 player',
     section: 'singleplayer',
     slug: 'sudoku',
-    symbol: '9×9',
     title: 'Sudoku',
   },
   {
-    description: 'Play a quick game of chess against a lightweight computer opponent.',
+    description: 'Clear a minefield at your own pace, with a first move that is always safe.',
+    path: '/play/minesweeper',
+    players: '1 player',
+    section: 'singleplayer',
+    slug: 'minesweeper',
+    title: 'Minesweeper',
+  },
+  {
+    description: 'Play "Kill the King" chess.',
     path: '/play/chess',
     players: '1 player',
     section: 'singleplayer',
     slug: 'chess',
-    symbol: '♞',
     title: 'Chess',
   },
   {
@@ -25,7 +31,6 @@ export const singleplayerGames: SingleplayerGame[] = [
     players: '1 player',
     section: 'singleplayer',
     slug: 'nonogram',
-    symbol: '▦',
     title: 'Nonogram',
   },
 ]

@@ -67,7 +67,7 @@ const content = computed<LegalContent>(() => {
           title: 'Operator',
           paragraphs: [
             'Henri Dickel',
-            'Solver Collection is a non-commercial hobby project.',
+            'Bartagames is a non-commercial hobby project.',
           ],
           link: githubProfile,
         },
@@ -78,7 +78,7 @@ const content = computed<LegalContent>(() => {
   if (props.page === 'accessibility') {
     return {
       title: 'Accessibility',
-      intro: 'Solver Collection aims to be usable by as many people as possible.',
+      intro: 'Bartagames aims to be usable by as many people as possible.',
       sections: [
         {
           title: 'Our approach',
@@ -108,7 +108,7 @@ const content = computed<LegalContent>(() => {
 
   return {
     title: 'Privacy Policy',
-    intro: 'This page explains what data is processed when you visit Solver Collection.',
+    intro: 'This page explains what data is processed when you visit Bartagames.',
     sections: [
       {
         title: 'Controller',
@@ -120,7 +120,7 @@ const content = computed<LegalContent>(() => {
       {
         title: 'Processing in the application',
         paragraphs: [
-          'Solver Collection is a static frontend. It has no registration, contact form, analytics, or advertising services.',
+          'Bartagames is a static frontend. It has no registration, contact form, analytics, or advertising services.',
           'Puzzle input is processed only in your browser for the current visit. The application does not transmit it to its own server.',
         ],
       },

@@ -173,10 +173,6 @@ function createRandomSolvableBoard(): MinesweeperBoard {
 
 const minesweeperExamplePool = new ExamplePool<MinesweeperBoard>(createRandomSolvableBoard)
 
-export function preloadMinesweeperExamples(): void {
-  minesweeperExamplePool.preload()
-}
-
 export const useMinesweeperStore = defineStore('minesweeper', {
   state: () => ({
     board: [] as MinesweeperBoard,
