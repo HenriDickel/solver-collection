@@ -570,6 +570,38 @@
     @apply mt-0;
   }
 
+  .play-mode-control {
+    @apply mt-5 flex items-center gap-3 rounded-xl border border-line bg-canvas p-3;
+  }
+
+  .play-mode-control--multi {
+    @apply items-start;
+  }
+
+  .play-mode-control__choices {
+    @apply flex shrink-0 gap-1;
+  }
+
+  .play-mode-control__icon {
+    @apply flex size-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-muted transition hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .play-mode-control__icon--active {
+    @apply border-accent bg-accent text-white shadow-sm hover:bg-strong hover:text-white;
+  }
+
+  .play-mode-control__copy {
+    @apply min-w-0;
+  }
+
+  .play-mode-control__copy strong {
+    @apply block text-sm font-extrabold text-ink;
+  }
+
+  .play-mode-control__copy p {
+    @apply mb-0 mt-0.5 text-xs leading-5 text-muted;
+  }
+
   .party-primary-button {
     @apply bg-accent text-white shadow-sm hover:bg-strong;
   }
@@ -730,8 +762,16 @@
     @apply flex min-h-0 min-w-0 items-center justify-center bg-surface text-lg font-extrabold text-muted transition hover:bg-accent-soft focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-accent;
   }
 
-  .play-nonogram-cell--marked {
+  .play-nonogram-cell--filled {
     @apply bg-strong;
+  }
+
+  .play-nonogram-cell--blocked {
+    @apply bg-surface text-muted;
+  }
+
+  .play-nonogram-block {
+    @apply text-xl font-black leading-none text-muted;
   }
 
   .play-nonogram-cell--empty {

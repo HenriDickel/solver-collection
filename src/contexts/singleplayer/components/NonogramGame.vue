@@ -24,16 +24,59 @@
             class="play-nonogram-cell"
             :class="`play-nonogram-cell--${cell}`"
             type="button"
-            :aria-label="cell === 'marked' ? 'Marked cell' : 'Empty cell'"
-            :aria-pressed="cell === 'marked'"
+            :aria-label="getCellLabel(cellIndex)"
+            :aria-pressed="cell === 'filled'"
             :disabled="isComplete"
-            @click="toggleCell(cellIndex)"
-          ></button>
+            @click="applyTool(cellIndex)"
+          >
+            <span v-if="cell === 'blocked'" class="play-nonogram-block" aria-hidden="true">&times;</span>
+          </button>
         </div>
       </div>
 
       <p v-if="isComplete" class="play-success">Picture complete.</p>
-      <p v-else class="play-hint">Tap a cell to switch between marked and empty.</p>
+      <p v-else class="play-hint">Choose a tool, then tap a cell to apply it.</p>
+      <div class="play-mode-control play-mode-control--multi" aria-label="Nonogram tools">
+        <div class="play-mode-control__choices">
+          <button
+            class="play-mode-control__icon"
+            :class="{ 'play-mode-control__icon--active': activeTool === 'filled' }"
+            type="button"
+            aria-label="Fill cells"
+            :aria-pressed="activeTool === 'filled'"
+            title="Fill cells"
+            @click="activeTool = 'filled'"
+          >
+            <PaintBucket :size="18" />
+          </button>
+          <button
+            class="play-mode-control__icon"
+            :class="{ 'play-mode-control__icon--active': activeTool === 'blocked' }"
+            type="button"
+            aria-label="Block cells"
+            :aria-pressed="activeTool === 'blocked'"
+            title="Block cells"
+            @click="activeTool = 'blocked'"
+          >
+            <SquareX :size="18" />
+          </button>
+          <button
+            class="play-mode-control__icon"
+            :class="{ 'play-mode-control__icon--active': activeTool === 'empty' }"
+            type="button"
+            aria-label="Empty cells"
+            :aria-pressed="activeTool === 'empty'"
+            title="Empty cells"
+            @click="activeTool = 'empty'"
+          >
+            <Eraser :size="18" />
+          </button>
+        </div>
+        <div class="play-mode-control__copy">
+          <strong>{{ activeToolCopy.title }}</strong>
+          <p>{{ activeToolCopy.description }}</p>
+        </div>
+      </div>
       <div class="play-action-row">
         <button class="play-secondary-button" type="button" @click="restartGame">Restart picture</button>
         <button class="play-secondary-button" type="button" @click="startRandomPuzzle">New solvable picture</button>
@@ -43,15 +86,17 @@
 </template>
 
 <script setup lang="ts">
+import { Eraser, PaintBucket, SquareX } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
-type NonogramCellState = 'empty' | 'marked'
+type NonogramCellState = 'blocked' | 'empty' | 'filled'
 type NonogramGrid = boolean[][]
 type NonogramClues = number[]
 
 const gridSize = 5
 const solution = ref<NonogramGrid>(createRandomSolution())
 const board = ref<NonogramCellState[][]>(createBoard())
+const activeTool = ref<NonogramCellState>('filled')
 const rowClues = computed(() => solution.value.map((row) => getClues(row)))
 const columnClues = computed(() => Array.from(
   { length: gridSize },
@@ -59,9 +104,23 @@ const columnClues = computed(() => Array.from(
 ))
 const correctCells = computed(() => board.value.flat().filter((state, index) => {
   const solutionCell = solution.value.flat()[index]
-  return state === (solutionCell ? 'marked' : 'empty')
+  return solutionCell ? state === 'filled' : state !== 'filled'
 }).length)
 const isComplete = computed(() => correctCells.value === gridSize * gridSize)
+const activeToolCopy = computed(() => ({
+  blocked: {
+    description: 'Mark a square you know cannot be filled.',
+    title: 'Block cells',
+  },
+  empty: {
+    description: 'Clear a mark and leave the square undecided.',
+    title: 'Empty cells',
+  },
+  filled: {
+    description: 'Fill squares that belong to the hidden picture.',
+    title: 'Fill cells',
+  },
+})[activeTool.value])
 
 function createBoard(): NonogramCellState[][] {
   return Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => 'empty' as NonogramCellState))
@@ -157,10 +216,18 @@ function createRandomSolution(): NonogramGrid {
   ]
 }
 
-function toggleCell(cellIndex: number): void {
+function applyTool(cellIndex: number): void {
   const rowIndex = Math.floor(cellIndex / gridSize)
   const columnIndex = cellIndex % gridSize
-  board.value[rowIndex][columnIndex] = board.value[rowIndex][columnIndex] === 'marked' ? 'empty' : 'marked'
+  board.value[rowIndex][columnIndex] = activeTool.value
+}
+
+function getCellLabel(cellIndex: number): string {
+  const rowIndex = Math.floor(cellIndex / gridSize)
+  const columnIndex = cellIndex % gridSize
+  const state = board.value[rowIndex][columnIndex]
+
+  return `Row ${rowIndex + 1}, column ${columnIndex + 1}: ${state}`
 }
 
 function restartGame(): void {

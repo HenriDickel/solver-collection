@@ -35,15 +35,25 @@
       </div>
 
       <p class="play-hint">{{ statusMessage }}</p>
-      <div class="play-action-row">
+      <div class="play-mode-control">
         <button
-          class="play-secondary-button"
+          class="play-mode-control__icon"
+          :class="{ 'play-mode-control__icon--active': isFlagMode }"
           type="button"
+          :aria-label="isFlagMode ? 'Switch to reveal mode' : 'Switch to mark mines mode'"
           :aria-pressed="isFlagMode"
+          :title="isFlagMode ? 'Switch to reveal mode' : 'Switch to mark mines mode'"
           @click="isFlagMode = !isFlagMode"
         >
-          {{ isFlagMode ? 'Mark mines: on' : 'Mark mines: off' }} ({{ minesRemaining }} left)
+          <Flag v-if="isFlagMode" :size="19" />
+          <MousePointer v-else :size="19" />
         </button>
+        <div class="play-mode-control__copy">
+          <strong>{{ isFlagMode ? 'Mark mines' : 'Reveal squares' }}</strong>
+          <p>{{ isFlagMode ? `${minesRemaining} mines left to mark.` : 'Tap a covered square to reveal it.' }}</p>
+        </div>
+      </div>
+      <div class="play-action-row">
         <button class="play-secondary-button" type="button" @click="startNewGame">New game</button>
       </div>
     </article>
@@ -51,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { Flag, MousePointer } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 type MinesweeperCellState = 'flagged' | 'hidden' | 'revealed'
